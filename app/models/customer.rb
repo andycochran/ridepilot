@@ -3,8 +3,6 @@ class Customer < ActiveRecord::Base
   belongs_to :address
   belongs_to :mobility
   belongs_to :default_funding_source, :class_name=>'FundingSource'
-  belongs_to :created_by, :foreign_key => :created_by_id, :class_name=>'User'
-  belongs_to :updated_by, :foreign_key => :updated_by_id, :class_name=>'User'
   has_many   :trips, :dependent => :destroy
 
   validates_presence_of :first_name
@@ -15,14 +13,13 @@ class Customer < ActiveRecord::Base
   normalize_attribute :last_name, :with=> [:squish, :titleize]
   normalize_attribute :middle_initial, :with=> [:squish, :upcase]
 
-  default_scope :order => 'last_name, first_name, middle_initial'
+  default_scope { order('last_name, first_name, middle_initial') }
   
-  scope :by_letter, lambda { |letter| where("lower(last_name) LIKE ?", "#{letter.downcase}%") }
-  scope :for_provider, lambda { |provider_id| where( :provider_id => provider_id ) }
-  scope :individual, where(:group => false)
-  scope :group, where(:grop => true)
+  scope :by_letter,    -> (letter) { where("lower(last_name) LIKE ?", "#{letter.downcase}%") }
+  scope :for_provider, -> (provider_id) { where( :provider_id => provider_id ) }
+  scope :individual,   -> { where(:group => false) }
 
-  stampable :creator_attribute => :created_by_id, :updater_attribute => :updated_by_id
+  has_paper_trail
 
   def name
     if group

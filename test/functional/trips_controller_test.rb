@@ -1,3 +1,6 @@
+# TODO this test is now duplicated as a controller spec. OK to remove
+# TODO once removed, rest of /test folder can be removed as well
+
 require 'test_helper'
 
 class TripsControllerTest < ActionController::TestCase
@@ -19,7 +22,7 @@ class TripsControllerTest < ActionController::TestCase
 
   test "should create trip" do
     assert_difference('Trip.count') do
-      post :create, :trip => @trip.attributes
+      post :create, :trip => @trip.dup.attributes.compact
     end
 
     assert_redirected_to trips_path(:start => @trip.pickup_time.to_i)

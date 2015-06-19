@@ -1,6 +1,4 @@
 class DevicePoolDriver < ActiveRecord::Base
-  attr_accessible :lat, :lng, :status, :posted_at
-  
   belongs_to :device_pool
   belongs_to :driver
   belongs_to :vehicle

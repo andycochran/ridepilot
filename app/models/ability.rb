@@ -2,7 +2,7 @@ class Ability
   include CanCan::Ability
 
   def initialize(user)
-    ride_connection = Provider.find_by_name("Ride Connection")
+    ride_connection = Provider.ride_connection
     can_manage_all = false
 
     can :read, Mobility
@@ -33,7 +33,7 @@ class Ability
     end
 
     provider = user.current_provider
-    role = Role.find(:first, :conditions=>["provider_id=? and user_id=?", provider.id, user.id])
+    role = Role.where("provider_id = ? and user_id = ?", provider.id, user.id).first
     if not role
       return
     end
@@ -46,7 +46,6 @@ class Ability
     can :read, FundingSource, {:providers => {:id => provider.id}}      
     can action, Address, :provider_id => provider.id
     can action, Customer, :provider_id => provider.id
-    can action, DevicePool, :provider_id => provider.id if provider.dispatch?
     can action, DevicePool, :provider_id => provider.id if provider.dispatch?
     can action, Driver, :provider_id => provider.id
     can action, Monthly, :provider_id => provider.id

@@ -10,7 +10,10 @@ class Provider < ActiveRecord::Base
   has_many :funding_sources, :through => :funding_source_visibilities
   has_many :addresses, :dependent => :nullify
 
-  has_attached_file :logo, :styles => { :small => "150x150>" }
+  has_attached_file :logo, 
+    :styles => { :small => "150x150>" },
+    :path => ":rails_root/public/system/:attachment/:id/:style/:filename",
+    :url => "/system/:attachment/:id/:style/:filename"
   
   REIMBURSEMENT_ATTRIBUTES = [
     :oaa3b_per_ride_reimbursement_rate,
@@ -24,7 +27,7 @@ class Provider < ActiveRecord::Base
     :stf_taxi_per_mile_wheelchair_reimbursement_rate
   ]
   
-  validate :name, :length => { :minimum => 2 }
+  validates :name, :length => { :minimum => 2 }
   validates_numericality_of :oaa3b_per_ride_reimbursement_rate,               :greater_than => 0, :allow_blank => true
   validates_numericality_of :ride_connection_per_ride_reimbursement_rate,     :greater_than => 0, :allow_blank => true
   validates_numericality_of :trimet_per_ride_reimbursement_rate,              :greater_than => 0, :allow_blank => true
@@ -34,11 +37,19 @@ class Provider < ActiveRecord::Base
   validates_numericality_of :stf_taxi_per_ride_wheelchair_load_fee,           :greater_than => 0, :allow_blank => true
   validates_numericality_of :stf_taxi_per_mile_ambulatory_reimbursement_rate, :greater_than => 0, :allow_blank => true
   validates_numericality_of :stf_taxi_per_mile_wheelchair_reimbursement_rate, :greater_than => 0, :allow_blank => true
-
-  validates_attachment_size :logo, :less_than => 200.kilobytes
-  validates_attachment_content_type :logo, :content_type => ['image/jpeg', 'image/png', 'image/gif']
+  validates_attachment :logo, 
+    size: {:less_than => 200.kilobytes}, 
+    # prevent content-type spoofing:
+    content_type: {:content_type => /\Aimage/},
+    file_name: {:matches => [/png\Z/, /gif\Z/, /jpe?g\Z/], allow_blank: true}
   
   after_initialize :init
+  
+  # Expects Ride Connection to be the first provider
+  # RADAR this should be changed to rely on an attribute other than the ID
+  def self.ride_connection
+    Provider.unscoped.order(:id).first
+  end
 
   def init
     self.scheduling = true if new_record?

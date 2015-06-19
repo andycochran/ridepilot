@@ -1,32 +1,53 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe CabTripsController do
-  before :each do
-    @user = create_role(level: 100).user
-    @request.env["devise.mapping"] = Devise.mappings[:user]
-    sign_in @user
-  end
+RSpec.describe CabTripsController, type: :controller do
+  login_admin_as_current_user
 
-  describe "GET 'index'" do
+  describe "GET #index" do
     it "should be successful" do
       get 'index'
-      response.should be_success
+      expect(response).to be_success
     end
   end
 
-  describe "GET 'edit_multiple'" do
+  describe "GET #edit_multiple" do
+    before(:each) do
+      @drivers   = create_list(:driver,   5, :provider => @current_user.current_provider)
+      @vehicles  = create_list(:vehicle,  5, :provider => @current_user.current_provider)
+      @cab_trips = create_list(:cab_trip, 5, :pickup_time => Time.zone.now, :provider => @current_user.current_provider)
+    end
+    
+    it "assigns all currently accessible drivers as @drivers" do
+      get :edit_multiple
+      expect(assigns(:drivers)).to eq(@drivers)
+    end
+    
+    it "assigns all currently accessible vehicles as @vehicles" do
+      get :edit_multiple
+      expect(assigns(:vehicles)).to eq(@vehicles)
+    end
+    
+    it "assigns all currently accessible cab trips as @cab_trips" do
+      get :edit_multiple, {:start => Date.today.in_time_zone.to_i}
+      expect(assigns(:cab_trips)).to include(@cab_trips[0])
+      expect(assigns(:cab_trips)).to include(@cab_trips[1])
+      expect(assigns(:cab_trips)).to include(@cab_trips[2])
+      expect(assigns(:cab_trips)).to include(@cab_trips[3])
+      expect(assigns(:cab_trips)).to include(@cab_trips[4])
+    end
+    
     it "should be successful" do
-      get 'edit_multiple'
-      response.should be_success
+      get :edit_multiple
+      expect(response).to be_success
     end
   end
   
-  describe "PUT 'update_multiple'" do
+  describe "PUT #update_multiple" do
     before do
-      @start_date = Time.now.beginning_of_week.to_date.to_time_in_current_zone.utc
-      @end_date = @start_date + 6.days
-      @t1 = create_trip provider: @user.current_provider, cab: true, pickup_time: @start_date, attendant_count: 0
-      @t2 = create_trip provider: @user.current_provider, cab: true, pickup_time: @start_date, attendant_count: 0
+      @start_date = Date.today.beginning_of_week.in_time_zone
+      @end_date = Date.today.end_of_week.in_time_zone
+      @t1 = create(:cab_trip, provider: @current_user.current_provider, pickup_time: Time.zone.now, attendant_count: 0)
+      @t2 = create(:cab_trip, provider: @current_user.current_provider, pickup_time: Time.zone.now, attendant_count: 0)
       cab_trip_params = {
         @t1.id => {
           attendant_count: 1
@@ -39,12 +60,12 @@ describe CabTripsController do
     end
     
     it "should be successful" do
-      response.should redirect_to(cab_trips_path(start: @start_date.to_time.to_i, end: @end_date.to_time.to_i))
+      expect(response).to redirect_to(cab_trips_path(start: @start_date.to_i, end: @end_date.to_i))
     end
     
     it "should update the submitted trips" do
-      Trip.find(@t1.id).attendant_count.should == 1
-      Trip.find(@t2.id).attendant_count.should == 2
+      expect(Trip.find(@t1.id).attendant_count).to eq(1)
+      expect(Trip.find(@t2.id).attendant_count).to eq(2)
     end
   end
 end

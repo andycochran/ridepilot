@@ -1,17 +1,7 @@
-class UsersController < Devise::SessionsController
-  require 'new_user_mailer'
+require 'new_user_mailer'
 
-  def new
-    #hooked up to sign_in
-    if User.count == 0
-      return redirect_to :action=>:show_init
-    end
-  end
-
+class UsersController < ApplicationController
   def new_user
-    if User.count == 0
-      return redirect_to :init
-    end
     authorize! :edit, current_user.current_provider
     @user = User.new
     @errors = []
@@ -30,10 +20,11 @@ class UsersController < Devise::SessionsController
     User.transaction do
       begin
         if not @user
-          @user = User.new(params[:user])
-          new_password = User.generate_password
-          @user.password = new_password
-          @user.reset_password_token = User.reset_password_token
+          @user = User.new(create_user_params)
+          @user.password = User.generate_password
+          raw, enc = Devise.token_generator.generate(User, :reset_password_token)
+          @user.reset_password_token = enc
+          @user.reset_password_sent_at = Time.now.utc
           @user.current_provider_id = current_provider_id
           @user.save!
           new_user = true
@@ -56,8 +47,10 @@ class UsersController < Devise::SessionsController
       flash[:notice] = "%s has been added and a password has been emailed" % @user.email
       redirect_to provider_path(current_provider)
     else
-      @errors = @role.valid? ? [] : {'email' => 'A user with this email address already exists'}
-      render :action=>:new_user
+      user_errors = @user.valid? ? {} : @user.errors.messages
+      role_errors = @role.valid? ? {} : @role.errors.messages
+      @errors = user_errors.merge(role_errors)
+      render :action => :new_user
     end
   end
   
@@ -66,7 +59,7 @@ class UsersController < Devise::SessionsController
   end
 
   def change_password
-    if current_user.update_password(params[:user])
+    if current_user.update_password(change_password_params)
       sign_in(current_user, :bypass => true)
       flash[:notice] = "Password changed"
       redirect_to '/'
@@ -74,29 +67,6 @@ class UsersController < Devise::SessionsController
       flash.now[:alert] = "Error updating password"
       render :action=>:show_change_password
     end
-  end
-
-  def show_init
-    #create initial user
-    if User.count > 0
-      return redirect_to :action=>:new
-    end
-    @user = User.new
-  end
-
-
-  def init
-    if User.count > 0
-      return redirect_to :action=>:new
-    end
-    @user = User.new params[:user]
-    @user.current_provider_id = 1
-    @user.save!
-    @role = Role.new ({:user_id=>@user.id, :provider_id=>1, :level=>100})
-    @role.save
-
-    flash[:notice] = "OK, now sign in"
-    redirect_to :action=>:new
   end
 
   def change_provider
@@ -110,8 +80,8 @@ class UsersController < Devise::SessionsController
 
   def check_session
     last_request_at = session['warden.user.user.session']['last_request_at']
-    timeout_time = last_request_at + Rails.configuration.devise.timeout_in
-    timeout_in = (timeout_time - Time.current).to_i
+    timeout_time = last_request_at + Rails.configuration.devise.timeout_in.to_i
+    timeout_in = timeout_time - Time.current.to_i
     render :json => {
       'last_request_at' => last_request_at,
       'timeout_in' => timeout_in,
@@ -122,4 +92,13 @@ class UsersController < Devise::SessionsController
     render :text => 'OK'
   end
 
+  private
+  
+  def create_user_params
+    params.require(:user).permit(:email)
+  end
+  
+  def change_password_params
+    params.require(:user).permit(:current_password, :password, :password_confirmation)
+  end
 end

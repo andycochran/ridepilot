@@ -10,8 +10,6 @@ class Trip < ActiveRecord::Base
   belongs_to :dropoff_address, :class_name=>"Address"
   belongs_to :called_back_by, :class_name=>"User"
   belongs_to :repeating_trip
-  belongs_to :created_by, :foreign_key => :created_by_id, :class_name=>'User'
-  belongs_to :updated_by, :foreign_key => :updated_by_id, :class_name=>'User'
 
   before_validation :compute_run
   before_create :create_repeating_trip
@@ -33,29 +31,28 @@ class Trip < ActiveRecord::Base
   validates_numericality_of :guest_count, :greater_than_or_equal_to => 0
   validates_numericality_of :attendant_count, :greater_than_or_equal_to => 0
   validates_numericality_of :mileage, :greater_than => 0, :allow_blank => true
-  accepts_nested_attributes_for :customer
+  accepts_nested_attributes_for :customer # TODO make sure these are accounted for in Strong Param setup
 
-  stampable :creator_attribute => :created_by_id, :updater_attribute => :updated_by_id
+  has_paper_trail
   
-  scope :for_cab, where(:cab => true)
-  scope :not_for_cab, where(:cab => false)
-  scope :for_provider, lambda { |provider_id| where( :provider_id => provider_id ) }
-  scope :for_date, lambda{|date| where('trips.pickup_time >= ? AND trips.pickup_time < ?', date.to_datetime.to_time_in_current_zone.utc, date.to_datetime.to_time_in_current_zone.utc + 1.day) }
-  scope :for_date_range, lambda{|start_date, end_date| where('trips.pickup_time >= ? AND trips.pickup_time < ?', start_date.to_datetime.to_time_in_current_zone.utc, end_date.to_datetime.to_time_in_current_zone.utc) }
-  scope :for_driver, lambda{|driver_id| not_for_cab.where(:runs => {:driver_id => driver_id}).joins(:run) }
-  scope :for_vehicle, lambda{|vehicle_id| not_for_cab.where(:runs => {:vehicle_id => vehicle_id}).joins(:run) }
-  scope :scheduled, where("trips.trip_result = '' OR trips.trip_result = 'COMP'")
-  scope :completed, where(:trip_result => 'COMP')
-  scope :turned_down, where(:trip_result => 'TD')
-  scope :today_and_prior, where('CAST(trips.pickup_time AS date) <= ?', Date.today.to_time_in_current_zone.utc)
-  scope :after_today, where('CAST(trips.pickup_time AS date) > ?', Date.today.to_time_in_current_zone.utc)
-  scope :prior_to, lambda{|pickup_time| where('trips.pickup_time < ?', pickup_time.to_datetime.to_time_in_current_zone.utc)}
-  scope :after, lambda{|pickup_time| where('trips.pickup_time > ?', pickup_time.utc)}
-  scope :repeating_based_on, lambda{|repeating_trip| where(:repeating_trip_id => repeating_trip.id)}
-  scope :called_back, where('called_back_at IS NOT NULL')
-  scope :not_called_back, where('called_back_at IS NULL')
-  scope :individual, joins(:customer).where(:customers => {:group => false})
-  scope :group, joins(:customer).where(:customers => {:group => true})
+  scope :for_cab,            -> { where(:cab => true) }
+  scope :not_for_cab,        -> { where(:cab => false) }
+  scope :for_provider,       -> (provider_id) { where( :provider_id => provider_id ) }
+  scope :for_date,           -> (date) { where('trips.pickup_time >= ? AND trips.pickup_time < ?', date.to_datetime.in_time_zone.utc, date.to_datetime.in_time_zone.utc + 1.day) }
+  scope :for_date_range,     -> (start_date, end_date) { where('trips.pickup_time >= ? AND trips.pickup_time < ?', start_date.to_datetime.in_time_zone.utc, end_date.to_datetime.in_time_zone.utc) }
+  scope :for_driver,         -> (driver_id) { not_for_cab.where(:runs => {:driver_id => driver_id}).joins(:run) }
+  scope :for_vehicle,        -> (vehicle_id) { not_for_cab.where(:runs => {:vehicle_id => vehicle_id}).joins(:run) }
+  scope :scheduled,          -> { where("trips.trip_result = '' OR trips.trip_result = 'COMP'") }
+  scope :completed,          -> { where(:trip_result => 'COMP') }
+  scope :turned_down,        -> { where(:trip_result => 'TD') }
+  scope :today_and_prior,    -> { where('CAST(trips.pickup_time AS date) <= ?', Date.today.in_time_zone.utc) }
+  scope :after_today,        -> { where('CAST(trips.pickup_time AS date) > ?', Date.today.in_time_zone.utc) }
+  scope :prior_to,           -> (pickup_time) { where('trips.pickup_time < ?', pickup_time.to_datetime.in_time_zone.utc) }
+  scope :after,              -> (pickup_time) { where('trips.pickup_time > ?', pickup_time.utc) }
+  scope :repeating_based_on, -> (repeating_trip) { where(:repeating_trip_id => repeating_trip.id) }
+  scope :called_back,        -> { where('called_back_at IS NOT NULL') }
+  scope :not_called_back,    -> { where('called_back_at IS NULL') }
+  scope :individual,         -> { joins(:customer).where(:customers => {:group => false}) }
 
   DAYS_OF_WEEK = %w{monday tuesday wednesday thursday friday saturday sunday}
   
@@ -298,15 +295,15 @@ private
 
     #when the trip is saved, we need to find or create a run for it.
     #this will depend on the driver and vehicle.  
-    self.run = Run.find(:first, :conditions=>["scheduled_start_time <= ? and scheduled_end_time >= ? and vehicle_id=? and provider_id=?", pickup_time, appointment_time, vehicle_id, provider_id])
+    self.run = Run.where("scheduled_start_time <= ? and scheduled_end_time >= ? and vehicle_id=? and provider_id=?", pickup_time, appointment_time, vehicle_id, provider_id).first
 
     if run.nil?
       #find the next/previous runs for this vehicle and, if necessary,
       #split or change times on them
 
-      previous_run = Run.find(:last, :conditions=>["scheduled_start_time <= ? and vehicle_id=? and provider_id=? ", appointment_time, vehicle_id, provider_id], :order=>"scheduled_start_time")
+      previous_run = Run.where("scheduled_start_time <= ? and vehicle_id=? and provider_id=? ", appointment_time, vehicle_id, provider_id).order("scheduled_start_time").last
 
-      next_run = Run.find(:first, :conditions=>["scheduled_start_time >= ? and vehicle_id=? and provider_id=? ", pickup_time, vehicle_id, provider_id], :order=>"scheduled_start_time")
+      next_run = Run.where("scheduled_start_time >= ? and vehicle_id=? and provider_id=? ", pickup_time, vehicle_id, provider_id).order("scheduled_start_time").first
 
       #there are four possible cases: either the previous or the next run
       #could overlap the trip, or neither could.
@@ -351,16 +348,16 @@ private
     end
 
     #now, can we push the start of the second run later?
-    first_trip = next_run.trips.find(:first)
+    first_trip = next_run.trips.first
     if first_trip.scheduled_start_time > appointment_time
       #yes, we can
       next_run.update_attributes! :scheduled_start_time => appointment_time
       previous_run.update_attributes! :scheduled_end_time => appointment_time
       self.run = previous_run
     else
-      #no, the second run is fixed.  Can we push the end of the
+      #no, the second run is fixed. Can we push the end of the
       #first run earlier?
-      last_trip = previous_run.trips.find(:last)
+      last_trip = previous_run.trips.last
       if last_trip.scheduled_end_time <= pickup_time
         #yes, we can
         previous_run.update_attributes! :scheduled_end_time => pickup_time

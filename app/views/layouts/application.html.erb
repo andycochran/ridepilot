@@ -4,26 +4,12 @@
   <title>
     <%= content_for?(:title) ? yield(:title) : "RidePilot" %>
   </title>
-  <%= stylesheet_link_tag "style.css" %>
-  <%= stylesheet_link_tag "print.css", :media=>'print' %>
-  <%= stylesheet_link_tag "jquery-ui-1.8.9.custom.css" %>
-  <%= stylesheet_link_tag "jquery.weekcalendar.css" %>
-  <%= stylesheet_link_tag "jquery-ui-timepicker-addon.css" %>
-  <%= javascript_include_tag :defaults %>
-  <%= javascript_include_tag "autocomplete-rails.js" %>
-  <%= javascript_include_tag "jquery.weekcalendar.js" %>
-  <%= javascript_include_tag "jquery-ui-timepicker-addon.js" %>
-  <%= javascript_include_tag "dateFormat.js" %>
-  <%= javascript_include_tag "jquery.colorPicker.js" %>
-  <%= javascript_include_tag "idletimeout.js" %>
-  <%= javascript_tag do %>
-    <%= render :partial => "layouts/constants.js" %>
-  <% end %>
-  <%= csrf_meta_tag %>
+  <%= stylesheet_link_tag    'application', media: 'all' %>
+  <%= javascript_include_tag 'application' %>
+  <%= csrf_meta_tags %>
   <%= yield :head %>
 </head>
 <body class="<%= bodytag_class %>">
-
   <div id="session-timeout-warning" style="display: none;">
     You will be logged off in <span><!-- countdown place holder
     --></span>&nbsp;seconds due to inactivity.
@@ -36,7 +22,7 @@
         <% if current_user %>
           <a href="#"><%= current_user.email %></a> 
           <span class="separator">|</span>
-          <%= link_to "Log out", destroy_user_session_path %>
+          <%= link_to "Log out", destroy_user_session_path, method: :delete %>
           <span class="separator">|</span>
           Logged in to 
           <% if @provider_map.size > 1 %>
