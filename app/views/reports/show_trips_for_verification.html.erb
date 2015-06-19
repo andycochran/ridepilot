@@ -1,5 +1,5 @@
 <%= content_for :title, "Verify Trips#{@query.try(:start_date).try(:strftime, ": %B %Y")}" %>
-<div id="page-header">
+<div id="page-header" class="clearfix">
 <h1>Verify Trips<%= @query.try(:start_date).try(:strftime, ": %B %Y") %></h1>
 </div>
 
