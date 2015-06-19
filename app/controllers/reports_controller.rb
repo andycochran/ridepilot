@@ -667,12 +667,12 @@ class ReportsController < ApplicationController
     @trips = trips.group_by {|trip| trip.run.try(:driver) }
   end
 
+  # argument is a string of the form hours:minutes:seconds.  We would like
+  # a float of hours
   def hms_to_hours(hms)
-    #argument is a string of the form hours:minutes:seconds.  We would like
-    #a float of hours
-    if !hms or hms.empty?
-      return 0
-    end
+    # In case this is nil or 0
+    return 0 if hms == 0 or hms.blank?
+
     hours, minutes, seconds = hms.split(":").map &:to_i
     hours ||= 0
     minutes ||= 0
