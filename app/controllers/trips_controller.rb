@@ -238,6 +238,7 @@ class TripsController < ApplicationController
       :repetition_vehicle_id,
       :round_trip,
       :run_id,
+      :cab,
       :service_level,
       :trip_purpose,
       :trip_result,
