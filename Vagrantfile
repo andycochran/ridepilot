@@ -59,7 +59,7 @@ Vagrant.configure(2) do |config|
           },
           # https://github.com/opscode-cookbooks/postgresql#chef-solo-note
           # set to md5 of empty string
-          password: { postgres: "d41d8cd98f00b204e9800998ecf8427e" }
+          password: { postgres: "e8a48653851e28c69d0506508fb27fc5" }
         },
         postgis: { template_name: 'template_postgis' },
       }
