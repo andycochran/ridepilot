@@ -26,6 +26,7 @@ body {
   *font-size:small; 
   line-height: 1.231; 
   font-family: "Helvetica Neue",Arial,Helvetica,sans-serif;
+  margin: 0;
 }
 select, input, textarea, button { font:99% sans-serif; }
 pre, code, kbd, samp { font-family: monospace, sans-serif; }
@@ -168,7 +169,7 @@ button {width: auto; overflow: visible;}
  *
  */
 #header {
-  padding: 10px 20px 5px;
+  padding: 20px 20px 10px;
   background: #0d4680;
   color: #ddd;
 }
@@ -364,7 +365,7 @@ body.reports #primary-nav li.vehicles-drivers-users a:hover, body.reports #prima
 }
 
 #main {
-  padding: 5px 20px;
+  padding: 10px 20px;
   margin: 0 0 20px;
   position: relative;
   z-index: 900;
@@ -372,8 +373,8 @@ body.reports #primary-nav li.vehicles-drivers-users a:hover, body.reports #prima
 }
 #page-header {
   background: #e5f2ff;
-  padding: 1px 10px;
-  margin: 0 0 5px;
+  padding: 5px 10px;
+  margin: 0 0 10px;
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 5px;
