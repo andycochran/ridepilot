@@ -4,11 +4,9 @@ lock '3.4.0'
 set :application, 'ridepilot'
 set :repo_url, 'git://github.com/rideconnection/ridepilot.git'
 set :deploy_via, :remote_cache
-set :deploy_to, '/home/deployer/rails/ridepilot'
 
 # RVM options
 set :rvm_type, :user
-set :rvm_ruby_version, '1.9.3-p550@ridepilot'
 set :rvm_roles, [:app, :web]
 
 # Rails options
