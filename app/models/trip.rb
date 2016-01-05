@@ -15,7 +15,7 @@ class Trip < ActiveRecord::Base
   before_create :create_repeating_trip
   before_update :update_repeating_trip
   after_save    :instantiate_repeating_trips
-  
+
   serialize :guests
 
   validates_presence_of :customer
@@ -34,28 +34,31 @@ class Trip < ActiveRecord::Base
   accepts_nested_attributes_for :customer # TODO make sure these are accounted for in Strong Param setup
 
   has_paper_trail
-  
-  scope :for_cab,            -> { where(:cab => true) }
-  scope :not_for_cab,        -> { where(:cab => false) }
-  scope :for_provider,       -> (provider_id) { where( :provider_id => provider_id ) }
-  scope :for_date,           -> (date) { where('trips.pickup_time >= ? AND trips.pickup_time < ?', date.to_datetime.in_time_zone.utc, date.to_datetime.in_time_zone.utc + 1.day) }
-  scope :for_date_range,     -> (start_date, end_date) { where('trips.pickup_time >= ? AND trips.pickup_time < ?', start_date.to_datetime.in_time_zone.utc, end_date.to_datetime.in_time_zone.utc) }
-  scope :for_driver,         -> (driver_id) { not_for_cab.where(:runs => {:driver_id => driver_id}).joins(:run) }
-  scope :for_vehicle,        -> (vehicle_id) { not_for_cab.where(:runs => {:vehicle_id => vehicle_id}).joins(:run) }
-  scope :scheduled,          -> { where("trips.trip_result = '' OR trips.trip_result = 'COMP'") }
-  scope :completed,          -> { where(:trip_result => 'COMP') }
-  scope :turned_down,        -> { where(:trip_result => 'TD') }
-  scope :today_and_prior,    -> { where('CAST(trips.pickup_time AS date) <= ?', Date.today.in_time_zone.utc) }
-  scope :after_today,        -> { where('CAST(trips.pickup_time AS date) > ?', Date.today.in_time_zone.utc) }
-  scope :prior_to,           -> (pickup_time) { where('trips.pickup_time < ?', pickup_time.to_datetime.in_time_zone.utc) }
-  scope :after,              -> (pickup_time) { where('trips.pickup_time > ?', pickup_time.utc) }
-  scope :repeating_based_on, -> (repeating_trip) { where(:repeating_trip_id => repeating_trip.id) }
-  scope :called_back,        -> { where('called_back_at IS NOT NULL') }
-  scope :not_called_back,    -> { where('called_back_at IS NULL') }
-  scope :individual,         -> { joins(:customer).where(:customers => {:group => false}) }
+
+  scope :for_cab,              -> { where(:cab => true) }
+  scope :not_for_cab,          -> { where(:cab => false) }
+  scope :for_provider,         -> (provider_id) { where( :provider_id => provider_id ) }
+  scope :for_date,             -> (date) { where('trips.pickup_time >= ? AND trips.pickup_time < ?', date.to_datetime.in_time_zone.utc, date.to_datetime.in_time_zone.utc + 1.day) }
+  scope :for_date_range,       -> (start_date, end_date) { where('trips.pickup_time >= ? AND trips.pickup_time < ?', start_date.to_datetime.in_time_zone.utc, end_date.to_datetime.in_time_zone.utc) }
+  scope :for_driver,           -> (driver_id) { not_for_cab.where(:runs => {:driver_id => driver_id}).joins(:run) }
+  scope :for_vehicle,          -> (vehicle_id) { not_for_cab.where(:runs => {:vehicle_id => vehicle_id}).joins(:run) }
+  scope :for_paid_driver,      -> { not_for_cab.where(:runs => {:paid => true}).joins(:run) }
+  scope :for_volunteer_driver, -> { not_for_cab.where(:runs => {:paid => false}).joins(:run) }
+  scope :for_funding_source,   -> (funding_source_id) { where(:funding_source_id => funding_source_id) }
+  scope :scheduled,            -> { where("trips.trip_result = '' OR trips.trip_result = 'COMP'") }
+  scope :completed,            -> { where(:trip_result => 'COMP') }
+  scope :turned_down,          -> { where(:trip_result => 'TD') }
+  scope :today_and_prior,      -> { where('CAST(trips.pickup_time AS date) <= ?', Date.today.in_time_zone.utc) }
+  scope :after_today,          -> { where('CAST(trips.pickup_time AS date) > ?', Date.today.in_time_zone.utc) }
+  scope :prior_to,             -> (pickup_time) { where('trips.pickup_time < ?', pickup_time.to_datetime.in_time_zone.utc) }
+  scope :after,                -> (pickup_time) { where('trips.pickup_time > ?', pickup_time.utc) }
+  scope :repeating_based_on,   -> (repeating_trip) { where(:repeating_trip_id => repeating_trip.id) }
+  scope :called_back,          -> { where('called_back_at IS NOT NULL') }
+  scope :not_called_back,      -> { where('called_back_at IS NULL') }
+  scope :individual,           -> { joins(:customer).where(:customers => {:group => false}) }
 
   DAYS_OF_WEEK = %w{monday tuesday wednesday thursday friday saturday sunday}
-  
+
   DAYS_OF_WEEK.each do |day|
     define_method "repeats_#{day}s=" do |value|
       instance_variable_set "@repeats_#{day}s", (value == "1" || value == true)
@@ -66,7 +69,7 @@ class Trip < ActiveRecord::Base
         if repeating_trip.present?
           instance_variable_set "@repeats_#{day}s", repeating_trip.schedule_attributes.send(day) == 1
         else
-          instance_variable_set "@repeats_#{day}s", false 
+          instance_variable_set "@repeats_#{day}s", false
         end
       else
         instance_variable_get("@repeats_#{day}s")
@@ -93,11 +96,11 @@ class Trip < ActiveRecord::Base
   def driver_id
     @driver_id || run.try(:driver_id)
   end
-  
+
   def pickup_time=(datetime)
-    write_attribute :pickup_time, format_datetime( datetime ) 
+    write_attribute :pickup_time, format_datetime( datetime )
   end
-  
+
   def appointment_time=(datetime)
     write_attribute :appointment_time, format_datetime( datetime )
   end
@@ -115,7 +118,7 @@ class Trip < ActiveRecord::Base
   def trip_count
     if customer.group
       count = group_size
-    else 
+    else
       count = guest_count + attendant_count + 1
     end
     round_trip ? count * 2 : count
@@ -164,7 +167,7 @@ class Trip < ActiveRecord::Base
   def repetition_interval
     if @repetition_interval.nil?
       if repeating_trip.present?
-        @repetition_interval = repeating_trip.schedule_attributes.interval 
+        @repetition_interval = repeating_trip.schedule_attributes.interval
       else
         1
       end
@@ -175,12 +178,12 @@ class Trip < ActiveRecord::Base
 
   def is_repeating_trip?
     ((repetition_interval || 0) > 0 && (
-      repeats_mondays     || 
-      repeats_tuesdays    || 
-      repeats_wednesdays  || 
-      repeats_thursdays   || 
-      repeats_fridays     || 
-      repeats_saturdays   || 
+      repeats_mondays     ||
+      repeats_tuesdays    ||
+      repeats_wednesdays  ||
+      repeats_thursdays   ||
+      repeats_fridays     ||
+      repeats_saturdays   ||
       repeats_sundays
       ))
   end
@@ -188,16 +191,16 @@ class Trip < ActiveRecord::Base
   def is_in_district?
     pickup_address.try(:in_district) && dropoff_address.try(:in_district)
   end
-  
+
   def allow_addressless_trip?
     # The provider_id is assigned via the customer. If the customer isn't present,
     # then the whole trip is invalid. So in that case, ignore the address errors
     # until there is a customer.
     (customer.blank? || customer.id.blank? || (provider.present? && provider.allow_trip_entry_from_runs_page)) && run.present?
   end
-    
+
 private
-  
+
   def create_repeating_trip
     if is_repeating_trip? && !via_repeating_trip
       self.repeating_trip = RepeatingTrip.create!(repeating_trip_attributes)
@@ -205,7 +208,7 @@ private
   end
 
   def update_repeating_trip
-    if is_repeating_trip? 
+    if is_repeating_trip?
       #this is a repeating trip, so we need to edit both
       #the repeating trip, and the instance for today
       if repeating_trip.blank?
@@ -233,15 +236,15 @@ private
   def destroy_future_repeating_trips
     if pickup_time < Time.now #Be sure not delete trips that have already happened.
       Trip.repeating_based_on(repeating_trip).after_today.not_called_back.destroy_all
-    else 
+    else
       Trip.repeating_based_on(repeating_trip).after(pickup_time).not_called_back.destroy_all
     end
   end
 
   def unlink_past_trips
-    if pickup_time < Time.now 
+    if pickup_time < Time.now
       Trip.repeating_based_on(repeating_trip).today_and_prior.update_all 'repeating_trip_id = NULL'
-    else 
+    else
       Trip.repeating_based_on(repeating_trip).prior_to(pickup_time).update_all 'repeating_trip_id = NULL'
     end
   end
@@ -254,9 +257,9 @@ private
     attrs['customer_informed'] = repetition_customer_informed
     attrs['schedule_attributes'] = {
       :repeat        => 1,
-      :interval_unit => "week", 
+      :interval_unit => "week",
       :start_date    => pickup_time.to_date.to_s,
-      :interval      => repetition_interval, 
+      :interval      => repetition_interval,
       :monday        => repeats_mondays    ? 1 : 0,
       :tuesday       => repeats_tuesdays   ? 1 : 0,
       :wednesday     => repeats_wednesdays ? 1 : 0,
@@ -269,7 +272,7 @@ private
   end
 
   def format_datetime(datetime)
-    if datetime.is_a?( String ) 
+    if datetime.is_a?( String )
       Time.zone.parse(datetime.gsub(/\b(a|p)\b/i, '\1m').upcase)
     elsif datetime.present?
       datetime
@@ -279,22 +282,22 @@ private
   end
 
   def driver_is_valid_for_vehicle
-    # This will error if a run was found or extended for this vehicle and time, 
+    # This will error if a run was found or extended for this vehicle and time,
     # but the driver for the run is not the driver selected for the trip
     if self.run.try(:driver_id).present? && self.driver_id.present? && self.run.driver_id.to_i != self.driver_id.to_i
       errors[:driver_id] << "is not the driver for the selected vehicle during this vehicle's run."
     end
   end
 
-  def compute_run    
+  def compute_run
     return if run_id || cab || vehicle_id.blank? || provider_id.blank?
 
-    if !pickup_time or !appointment_time 
+    if !pickup_time or !appointment_time
       return #we'll error out in validation
     end
 
     #when the trip is saved, we need to find or create a run for it.
-    #this will depend on the driver and vehicle.  
+    #this will depend on the driver and vehicle.
     self.run = Run.where("scheduled_start_time <= ? and scheduled_end_time >= ? and vehicle_id=? and provider_id=?", pickup_time, appointment_time, vehicle_id, provider_id).first
 
     if run.nil?

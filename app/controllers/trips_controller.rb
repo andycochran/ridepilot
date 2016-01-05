@@ -1,16 +1,16 @@
 class TripsController < ApplicationController
   load_and_authorize_resource
-  
+
   before_filter :set_calendar_week_start, :only => [:index, :new, :edit]
 
   def index
     @trips = @trips.for_provider(current_provider_id).includes(:customer, {:run => [:driver, :vehicle]}).order(:pickup_time)
-    
+
     respond_to do |format|
       format.html do
         @start = params[:start].to_i
         # let js handle grabbing the trips
-        @trips = [] 
+        @trips = []
         @vehicles = add_cab(Vehicle.accessible_by(current_ability).where(:provider_id => current_provider_id))
       end
       format.xml  { render :xml => @trips }
@@ -116,14 +116,14 @@ class TripsController < ApplicationController
     if params[:customer_id] && customer = Customer.find_by_id(params[:customer_id])
       @trip.customer_id = customer.id
       @trip.pickup_address_id = customer.address_id
-      @trip.mobility_id = customer.mobility_id 
+      @trip.mobility_id = customer.mobility_id
       @trip.funding_source_id = customer.default_funding_source_id
       @trip.service_level = customer.default_service_level
     end
 
     prep_view
     @trips = []
-    
+
     respond_to do |format|
       format.html # new.html.erb
       format.xml  { render :xml => @trip }
@@ -134,9 +134,9 @@ class TripsController < ApplicationController
   def edit
     prep_view
     @trips = []
-    
+
     respond_to do |format|
-      format.html 
+      format.html
       format.js  { @remote = true; render :json => {:form => render_to_string(:partial => 'form')}, :content_type => "text/json" }
     end
   end
@@ -147,19 +147,19 @@ class TripsController < ApplicationController
       params[:trip][:provider_id] = customer.provider.id if customer.provider.present?
     else
       params[:trip][:customer_id] = ""
-    end    
+    end
     handle_trip_params params[:trip]
     @trip = Trip.new(trip_params)
     authorize! :manage, @trip
-    
+
     respond_to do |format|
       prep_view
       if @trip.save
         format.html {
           if params[:run_id].present?
-            redirect_to(edit_run_path(@trip.run), :notice => 'Trip was successfully created.')       
+            redirect_to(edit_run_path(@trip.run), :notice => 'Trip was successfully created.')
           else
-            redirect_to(trips_path(:start => @trip.pickup_time.to_i), :notice => 'Trip was successfully created.') 
+            redirect_to(trips_path(:start => @trip.pickup_time.to_i), :notice => 'Trip was successfully created.')
           end
         }
         format.js { render :json => {:status => "success", :trip => render_to_string(:partial => 'runs/trip', :locals => {:trip => @trip})}, :content_type => "text/json" }
@@ -177,14 +177,14 @@ class TripsController < ApplicationController
       params[:trip][:provider_id] = customer.provider.id if customer.provider.present?
     else
       params[:trip][:customer_id] = @trip.customer_id
-    end    
+    end
     handle_trip_params params[:trip]
     authorize! :manage, @trip
 
     respond_to do |format|
       if @trip.update_attributes(trip_params)
         format.html { redirect_to(trips_path, :notice => 'Trip was successfully updated.')  }
-        format.js { 
+        format.js {
           render :json => {:status => "success"}, :content_type => "text/json"
         }
       else
@@ -207,7 +207,7 @@ class TripsController < ApplicationController
   end
 
   private
-  
+
   def trip_params
     params.require(:trip).permit(
       :appointment_time,
@@ -246,7 +246,7 @@ class TripsController < ApplicationController
       customer_attributes: [:id]
     )
   end
-  
+
   def set_calendar_week_start
     @week_start = if params[:start].present?
       Time.at params[:start].to_i/1000
@@ -256,10 +256,10 @@ class TripsController < ApplicationController
       Time.now.beginning_of_week
     end
   end
-  
+
   def trips_json
     filter_trips
-    trips = @trips.map { |trip| 
+    trips = @trips.map { |trip|
       { :id    => trip.id,
         :start => trip.pickup_time.to_s(:js),
         :end   => trip.appointment_time.to_s(:js),
@@ -276,7 +276,7 @@ class TripsController < ApplicationController
       end
     end
 
-    {:events => trips, :rows => rows }    
+    {:events => trips, :rows => rows }
   end
 
   def prep_view
@@ -289,7 +289,7 @@ class TripsController < ApplicationController
     @drivers            = Driver.active.for_provider @trip.provider_id
     @trips              = [] if @trips.nil?
     @vehicles           = add_cab(Vehicle.active.for_provider(@trip.provider_id))
-    @repeating_vehicles = @vehicles 
+    @repeating_vehicles = @vehicles
     @service_levels     = SERVICE_LEVELS
 
     @trip.run_id = -1 if @trip.cab
@@ -298,9 +298,9 @@ class TripsController < ApplicationController
     cab_run.id = -1
     @runs = Run.for_provider(@trip.provider_id).incomplete_on(@trip.pickup_time.try(:to_date)) << cab_run
   end
-  
+
   def handle_trip_params(trip_params)
-    if trip_params[:run_id] == '-1' 
+    if trip_params[:run_id] == '-1'
       #cab trip
       trip_params[:run_id] = nil
       trip_params[:cab] = true
@@ -327,12 +327,12 @@ class TripsController < ApplicationController
     @trips = @trips.
       where("pickup_time >= '#{t_start.strftime "%Y-%m-%d %H:%M:%S"}'").
       where("pickup_time <= '#{t_end.strftime "%Y-%m-%d %H:%M:%S"}'").order(:pickup_time)
-      
-    if params[:vehicle_id].present?  
+
+    if params[:vehicle_id].present?
       if params[:vehicle_id].to_i == -1
-        @trips = @trips.select {|t| t.cab } 
+        @trips = @trips.select {|t| t.cab }
       else
-        @trips = @trips.select {|t| t.vehicle_id == params[:vehicle_id].to_i } 
+        @trips = @trips.select {|t| t.vehicle_id == params[:vehicle_id].to_i }
       end
     end
   end
@@ -340,6 +340,6 @@ class TripsController < ApplicationController
   def add_cab(vehicles)
     cab_vehicle = Vehicle.new :name => "Cab"
     cab_vehicle.id = -1
-    [cab_vehicle] + vehicles 
+    [cab_vehicle] + vehicles
   end
 end

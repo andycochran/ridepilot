@@ -11,10 +11,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 20150224063651) do
+ActiveRecord::Schema.define(version: 20160104210339) do
 
   # These are extensions that must be enabled in order to support this database
   enable_extension "plpgsql"
+  enable_extension "fuzzystrmatch"
   enable_extension "postgis"
   enable_extension "postgis_topology"
 
@@ -229,32 +230,34 @@ ActiveRecord::Schema.define(version: 20150224063651) do
     t.integer  "customer_id"
     t.datetime "pickup_time"
     t.datetime "appointment_time"
-    t.integer  "guest_count",                                 default: 0
-    t.integer  "attendant_count",                             default: 0
-    t.integer  "group_size",                                  default: 0
+    t.integer  "guest_count",                                   default: 0
+    t.integer  "attendant_count",                               default: 0
+    t.integer  "group_size",                                    default: 0
     t.integer  "pickup_address_id"
     t.integer  "dropoff_address_id"
     t.integer  "mobility_id"
     t.integer  "funding_source_id"
     t.string   "trip_purpose"
-    t.string   "trip_result",                                 default: ""
+    t.string   "trip_result",                                   default: ""
     t.text     "notes"
-    t.decimal  "donation",           precision: 10, scale: 2, default: 0.0
+    t.decimal  "donation",             precision: 10, scale: 2, default: 0.0
     t.integer  "provider_id"
     t.datetime "called_back_at"
-    t.boolean  "customer_informed",                           default: false
+    t.boolean  "customer_informed",                             default: false
     t.integer  "repeating_trip_id"
-    t.boolean  "cab",                                         default: false
-    t.boolean  "cab_notified",                                default: false
+    t.boolean  "cab",                                           default: false
+    t.boolean  "cab_notified",                                  default: false
     t.text     "guests"
     t.integer  "called_back_by_id"
     t.datetime "created_at"
     t.datetime "updated_at"
-    t.integer  "lock_version",                                default: 0
+    t.integer  "lock_version",                                  default: 0
     t.boolean  "round_trip"
     t.boolean  "medicaid_eligible"
     t.integer  "mileage"
     t.string   "service_level"
+    t.decimal  "apportioned_duration", precision: 7,  scale: 2
+    t.decimal  "apportioned_mileage",  precision: 9,  scale: 2
   end
 
   add_index "trips", ["provider_id", "appointment_time"], :name => "index_trips_on_provider_id_and_appointment_time"

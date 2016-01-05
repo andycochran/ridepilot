@@ -10,6 +10,7 @@ class Query
   attr_accessor :vehicle_id
   attr_accessor :driver_id
   attr_accessor :trip_display
+  attr_accessor :funding_source_id
 
   def convert_date(obj, base)
     return Date.new(obj["#{base}(1i)"].to_i,obj["#{base}(2i)"].to_i,(obj["#{base}(3i)"] || 1).to_i)
@@ -50,6 +51,11 @@ class Query
       end
       if params["trip_display"]
         @trip_display = params["trip_display"]
+      end
+      if params["funding_source_id"].present?
+        @funding_source_id = params["funding_source_id"]
+      else
+        @funding_source = nil
       end
     end
   end
@@ -105,20 +111,22 @@ class ReportsController < ApplicationController
 
   def service_summary
     query_params = params[:query] || {}
-    @query = Query.new(query_params)
-    @start_date = @query.start_date
-    @end_date = @query.end_date
-    @monthly = Monthly.where(:start_date => @start_date, :provider_id=>current_provider_id).first
-    @monthly = Monthly.new(:start_date=>@start_date, :provider_id=>current_provider_id) if @monthly.nil?
-    @provider = current_provider
+    @query               = Query.new(query_params)
+    @funding_sources     = FundingSource.by_provider(current_provider)
+    @funding_source_name = FundingSource.find_by(id: @query.funding_source_id).try(:name) || "Unspecified Funding Source"
+    @start_date          = @query.start_date
+    @end_date            = @query.end_date
+    @monthly             = Monthly.where(:start_date => @start_date, :provider_id=>current_provider_id).first
+    @monthly             = Monthly.new(:start_date=>@start_date, :provider_id=>current_provider_id) if @monthly.nil?
+    @provider            = current_provider
 
     if !can? :read, @monthly
       return redirect_to reports_path
     end
 
     #computes number of trips in and out of district by purpose
-    counts_by_purpose = Trip.for_provider(current_provider_id).for_date_range(@start_date, @end_date)
-        .includes(:customer, :pickup_address, :dropoff_address).completed
+    trips = Trip.for_provider(current_provider_id).for_date_range(@start_date, @end_date)
+        .for_funding_source(@query.funding_source_id).includes(:customer, :pickup_address, :dropoff_address).completed
 
     by_purpose = {}
     TRIP_PURPOSES.each do |purpose|
@@ -126,7 +134,7 @@ class ReportsController < ApplicationController
     end
     @total = {'in_district' => 0, 'out_of_district' => 0}
 
-    counts_by_purpose.each do |row|
+    trips.each do |row|
       purpose = row.trip_purpose
       next unless by_purpose.member?(purpose)
 
@@ -145,17 +153,15 @@ class ReportsController < ApplicationController
     end
 
     #compute monthly totals
-    runs = Run.for_provider(current_provider_id).for_date_range(@start_date, @end_date)
+    runs = Run.for_provider(current_provider_id).for_date_range(@start_date, @end_date).includes_funding_source(@query.funding_source_id)
+    runs.each {|run| run.apportion_hours_and_miles! }
 
-    mileage_runs = runs.select("vehicle_id, min(start_odometer) as min_odometer, max(end_odometer) as max_odometer").group("vehicle_id").with_odometer_readings
-    @total_miles_driven = 0
-    mileage_runs.each {|run| @total_miles_driven += (run.max_odometer.to_i - run.min_odometer.to_i) }
+    @total_miles_driven = trips.sum(:apportioned_mileage)
+    @volunteer_driver_hours = trips.for_volunteer_driver.sum(:apportioned_duration)/3600.0
+    @paid_driver_hours = trips.for_paid_driver.sum(:apportioned_duration)/3600.0
 
-    @turndowns = Trip.turned_down.for_date_range(@start_date, @end_date).for_provider(current_provider_id).count
-    @volunteer_driver_hours = hms_to_hours(runs.for_volunteer_driver.sum("actual_end_time - actual_start_time") || "0:00:00")
-    @paid_driver_hours = hms_to_hours(runs.for_paid_driver.sum("actual_end_time - actual_start_time")  || "0:00:00")
-
-    trip_customers = Trip.individual.select("DISTINCT customer_id").for_provider(current_provider_id).completed
+    @turndowns = Trip.turned_down.for_date_range(@start_date, @end_date).for_funding_source(@query.funding_source_id).for_provider(current_provider_id).count
+    trip_customers = Trip.individual.select("DISTINCT customer_id").for_provider(current_provider_id).for_funding_source(@query.funding_source_id).completed
     prior_customers_in_fiscal_year = trip_customers.for_date_range(fiscal_year_start_date(@start_date), @start_date).map {|x| x.customer_id}
     customers_this_period = trip_customers.for_date_range(@start_date, @end_date).map {|x| x.customer_id}
     @undup_riders = (customers_this_period - prior_customers_in_fiscal_year).size

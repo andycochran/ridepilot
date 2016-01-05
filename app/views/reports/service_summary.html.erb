@@ -7,6 +7,8 @@
   <fieldset class="select-month">
     <p>
       <%= f.date_select  :start_date, :order => [:month,:year] %>
+      <%= f.label :funding_source_id, "Funding Source:" %>
+      <%= f.collection_select :funding_source_id, @funding_sources, :id, :name, include_blank: '<Unspecified>' %>
       <%= f.submit "Report" %>
     </p>
   </fieldset>
@@ -24,7 +26,7 @@
     <th colspan="2">
     </th>
     <th colspan="3" class="service-header">
-      STF Service
+      <%= @funding_source_name %>
     </th>
   </tr>
   <tr>
@@ -93,21 +95,21 @@
     <th><%= i += 1 %></th>
     <td>Driver hours: Volunteer</td>
     <td colspan="2" class="greyed-out"></td>
-    <td class="numeric"><%= @volunteer_driver_hours %></td>
+    <td class="numeric"><%= number_with_precision(@volunteer_driver_hours, precision: 1) %></td>
   </tr>
 
   <tr>
     <th><%= i += 1 %></th>
     <td>Driver hours: Paid</td>
     <td colspan="2" class="greyed-out"></td>
-    <td class="numeric"><%= @paid_driver_hours %></td>
+    <td class="numeric"><%= number_with_precision(@paid_driver_hours, precision: 1) %></td>
   </tr>
 
   <tr>
     <th><%= i += 1 %></th>
     <td class="total-label">Total Driver hours</td>
     <td colspan="2" class="greyed-out"></td>
-    <td class="numeric total"><%= @paid_driver_hours + @volunteer_driver_hours %></td>
+    <td class="numeric total"><%= number_with_precision(@paid_driver_hours + @volunteer_driver_hours, precision: 1) %></td>
   </tr>
 
   <tr>
