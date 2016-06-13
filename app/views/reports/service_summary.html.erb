@@ -1,148 +1,154 @@
-<div id="page-header">
+<%= content_for :title, "Service Summary: #{@provider.name}, #{@start_date.strftime("%B %Y")}" %>
+<div id="page-header" class="clearfix">
   <h1>Reports: Service Summary</h1>
 </div>
 
 <%= form_for @query, :url=>url_for(:action=>:service_summary), :html=>{:method=>:get} do |f| %>
-  <fieldset>
+  <fieldset class="select-month">
     <p>
-      <%= f.date_select :start_date, :discard_day=>true %>
+      <%= f.date_select  :start_date, :order => [:month,:year] %>
+      <%= f.label :funding_source_id, "Funding Source:" %>
+      <%= f.collection_select :funding_source_id, @funding_sources, :id, :name, include_blank: '<Unspecified>' %>
       <%= f.submit "Report" %>
     </p>
   </fieldset>
 <% end %>
 
+<%= render :partial => 'header' %>
 
-<%= form_for @monthly, :url=> {:action=>:update_monthly} do |f| %>
-  <%= f.hidden_field :id %>
+<table>
+  <tr>
+    <th colspan="5" class="table-header print-only">
+      Service Summary Section 1 - Trip Data
+    </th>
+  </tr>
+  <tr>
+    <th colspan="2">
+    </th>
+    <th colspan="3" class="service-header">
+      <%= @funding_source_name %>
+    </th>
+  </tr>
+  <tr>
+    <th class="line-number">
+      Line #
+    </th>
+    <th>
+    </th>
+    <th class="data">
+      In District
+    </th>
+    <th class="data">
+      Out of District
+    </th>
+    <th class="data">
+      Total
+    </th>
+  </tr>
 
-  <fieldset>
+  <tr>
+    <th></th>
+    <th class="section-header">Trips</th>
+    <td colspan="3" class="greyed-out"></td>
+  </tr>
 
-    <table>
-      <tr>
-        <th>Section 1 - Ride Data</th>
-        <th>In-district trips</th>
-        <th>Out-of-district trips</th>
-        <th>Total</th>
-      </tr>
-    
-      <% for row in @trips_by_purpose %>
-      <tr>
-        <td><%= row['purpose'] %></td>
-        <td><%= row['in_district'] %></td>
-        <td><%= row['out_of_district'] %></td>
-        <td><%= row['in_district'] + row['out_of_district'] %></td>
-      </tr>
-      <% end %>
-    
-      <tr>
-        <td>Total</td>
-        <td><%= @total['in_district'] %></td>
-        <td><%= @total['out_of_district'] %></td>
-        <td><%= @total['in_district'] + @total['out_of_district'] %></td>
-      </tr>
-    
-      <tr>
-        <tD>Total miles driven</td>
-        <td><%= @total_miles_driven %></td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-      <tr>
-        <td>Turndowns</td>
-        <td><%= @turndowns %></td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-      <tr>
-        <td>Driver hours: Volunteer</td>
-        <td><%= @volunteer_driver_hours %></td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-      <tr>
-        <td>Driver hours: Paid</td>
-        <td><%= @paid_driver_hours %></td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-      <tr>
-        <td>Total Driver hours</td>
-        <td><%= @paid_driver_hours + @volunteer_driver_hours %></td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-      <tr>
-        <td>Volunteer hours: Escort</td>
-        <td>
-          <% if can? :edit, @monthly %>
-          <%= f.text_field :volunteer_escort_hours %>
-          <% else %>
-          <%= @monthly.volunteer_escort_hours %>
-          <% end %>
-        </td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-      <tr>
-        <td>Volunteer hours: Administrative</td>
-        <td>
-          <% if can? :edit, @monthly %>
-          <%= f.text_field :volunteer_admin_hours %>
-          <% else %>
-          <%= @monthly.volunteer_admin_hours %>
-          <% end %>
-        </td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-      <tr>
-        <td>Unduplicated riders</td>
-        <td><%= @undup_riders %></td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-      <tr>
-        <td>Compliments</td>
-        <td>
-          <% if can? :edit, @monthly %>
-          <%= f.text_field :compliments %>
-          <% else %>
-          <%= @monthly.compliments %>
-          <% end %>
-        </td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-      <tr>
-        <td>Complaints</td>
-        <td>
-          <% if can? :edit, @monthly %>
-          <%= f.text_field :complaints %>
-          <% else %>
-          <%= @monthly.complaints %>
-          <% end %>
-        </td>
-        <td></td>
-        <td></td>
-      </tr>
-    
-    </table>
-    
-    <% if can? :edit, @monthly %>
-    <div class="actions">
-      <%= f.submit %>
-    </div>
-    <% end %>
+  <% i = 0 %>
+  <% for row in @trips_by_purpose %>
+    <tr>
+      <th><%= i += 1 %></th>
+      <td><%= row['purpose'] %></td>
+      <td class="numeric"><%= row['in_district'] %></td>
+      <td class="numeric"><%= row['out_of_district'] %></td>
+      <td class="numeric total"><%= row['in_district'] + row['out_of_district'] %></td>
+    </tr>
+  <% end %>
 
-  </fieldset>
+  <tr>
+    <th><%= i += 1 %></th>
+    <td class="total-label">Total Trips</td>
+    <td class="numeric total"><%= @total['in_district'] %></td>
+    <td class="numeric total"><%= @total['out_of_district'] %></td>
+    <td class="numeric total"><%= @total['in_district'] + @total['out_of_district'] %></td>
+  </tr>
 
-<% end %>
+  <tr>
+    <th><%= i += 1 %></th>
+    <td>Total miles driven</td>
+    <td colspan="2" class="greyed-out"></td>
+    <td class="numeric"><%= @total_miles_driven %></td>
+  </tr>
+
+  <tr>
+    <th><%= i += 1 %></th>
+    <td>Turndowns</td>
+    <td colspan="2" class="greyed-out"></td>
+    <td class="numeric"><%= @turndowns %></td>
+  </tr>
+
+  <tr>
+    <th></th>
+    <th class="section-header">Drivers</th>
+    <td colspan="3" class="greyed-out"></td>
+  </tr>
+
+  <tr>
+    <th><%= i += 1 %></th>
+    <td>Driver hours: Volunteer</td>
+    <td colspan="2" class="greyed-out"></td>
+    <td class="numeric"><%= number_with_precision(@volunteer_driver_hours, precision: 1) %></td>
+  </tr>
+
+  <tr>
+    <th><%= i += 1 %></th>
+    <td>Driver hours: Paid</td>
+    <td colspan="2" class="greyed-out"></td>
+    <td class="numeric"><%= number_with_precision(@paid_driver_hours, precision: 1) %></td>
+  </tr>
+
+  <tr>
+    <th><%= i += 1 %></th>
+    <td class="total-label">Total Driver hours</td>
+    <td colspan="2" class="greyed-out"></td>
+    <td class="numeric total"><%= number_with_precision(@paid_driver_hours + @volunteer_driver_hours, precision: 1) %></td>
+  </tr>
+
+  <tr>
+    <th></th>
+    <th class="section-header">Volunteer Hours</th>
+    <td colspan="3" class="greyed-out"></td>
+  </tr>
+
+  <tr>
+    <th><%= i += 1 %></th>
+    <td>Volunteer hours: Escort</td>
+    <td colspan="2" class="greyed-out"></td>
+    <td class="numeric">
+      <%= @monthly.volunteer_escort_hours %>
+    </td>
+  </tr>
+
+  <tr>
+    <th><%= i += 1 %></th>
+    <td>Volunteer hours: Administrative</td>
+    <td colspan="2" class="greyed-out"></td>
+    <td class="numeric">
+      <%= @monthly.volunteer_admin_hours %>
+    </td>
+  </tr>
+
+  <tr>
+    <th></th>
+    <th class="section-header">Ride Information</th>
+    <td colspan=3 class="greyed-out"></td>
+  </tr>
+
+  <tr>
+    <th><%= i += 1 %></th>
+    <td>Unduplicated riders (First ride this fiscal year)</td>
+    <td colspan="2" class="greyed-out"></td>
+    <td class="numeric"><%= @undup_riders %></td>
+  </tr>
+
+</table>
+
+<%= render :partial => 'footer' %>

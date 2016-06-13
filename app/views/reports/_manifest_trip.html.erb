@@ -1,0 +1,40 @@
+<table class="trip">
+  <tr class="customer">
+    <td class="name">
+      <%= trip.customer.name %><span class='address_separator'></span>
+      <%= trip.customer.phone_number_1 %><span class='address_separator'></span>
+      <%= trip.customer.phone_number_2 %>
+    </td>
+    <td class="mobility">
+      <%= trip.mobility.try(:name) %>
+      <% if trip.customer.mobility_notes.present? %>
+        &mdash; <%= trip.customer.mobility_notes %>
+      <% end %>
+    </td>
+  </tr>
+  <tr class="addresses">
+    <td class="pickup">
+      PU: <%= trip.pickup_address.try(:text) || '(Pickup Unspecified)' %>
+    </td>
+    <td class="dropoff">
+      DO: <%= trip.dropoff_address.try(:text) || '(Dropoff Unspecified)' %>
+    </td>
+  </tr>
+  <% if trip.notes.present? %>
+    <tr>
+      <td colspan="2" class="notes">
+        Trip notes: <%= trip.notes %>
+      </td>
+    </tr>
+  <% end %>
+  <% if show_status %>
+    <tr>
+      <td class="notes">
+        Run: <%= trip.run_text %><span class='address_separator'></span>
+      </td>
+      <td>
+        Result: <%= trip.trip_result.present? ? trip.trip_result : "Pending" %>
+      </td>
+    </tr>
+  <% end %>
+</table>

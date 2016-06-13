@@ -1,0 +1,83 @@
+<%= content_for :title, "Vehicle Operations: #{@provider.name}, #{@start_date.strftime("%B %Y")}" %>
+
+<div id="page-header" class="clearfix">
+  <h1>Vehicle Operations Report</h1>
+</div>
+
+<%= form_for @query, :url=>url_for(:action=>:vehicles_monthly), :html=>{:method=>:get} do |f| %>
+  <fieldset class="select-month">
+    <p>
+      <%= f.date_select  :start_date, :order => [:month,:year] %>
+      <%= f.submit "Report" %>
+    </p>
+  </fieldset>
+<% end %>
+
+<%= render :partial => 'header' %>
+
+<div class="report selfclear">
+  <table>
+    <tr>
+      <th colspan="8" class="table-header print-only">
+        Vehicle Operations Report
+      </th>
+    </tr>
+    <tr>
+      <th colspan="2">
+        Vehicle Year/Make/Model (Internal Name)
+      </th>
+      <th class="data">
+        Total Trips
+      </th>
+      <th class="data">
+        Hours in Operation
+      </th>
+      <th class="data">
+        Avg Rides per Hour
+      </th>
+      <th class="data">
+        Start Odometer
+      </th>
+      <th class="data">
+        End Odometer
+      </th>
+      <th class="data">
+        Mileage
+      </th>
+    </tr>
+
+    <% @vehicles.each do |vehicle| %>
+      <tr>
+        <th colspan="2"><%= "#{vehicle.year}/#{vehicle.make}/#{vehicle.model} (#{vehicle.name})" %></th>
+        <td class="numeric"><%= @total_rides[vehicle] %></td>
+        <td class="numeric"><%= @total_hours[vehicle] %></td>
+        <td class="numeric">
+          <% if @total_hours[vehicle] == 0 %>
+           0.0
+          <% else %>
+           <%= "%.1f" % (@total_rides[vehicle].to_f / @total_hours[vehicle].to_f)  %>
+          <% end %>
+        </td>
+        <td class="numeric"><%= @beginning_odometer[vehicle] == -1 ? 'N/A' : @beginning_odometer[vehicle] %></td>
+        <td class="numeric"><%= @ending_odometer[vehicle] == -1 ? 'N/A' : @ending_odometer[vehicle] %></td>
+        <td class="numeric"><%= @ending_odometer[vehicle] == -1 || @beginning_odometer[vehicle] == -1 ? 'N/A' : @ending_odometer[vehicle] - @beginning_odometer[vehicle] %></td>
+      </tr>
+      <tr>
+        <th>VIN:</th>
+        <td><%= vehicle.vin %></td>
+        <td colspan="6" rowspan="3"></td>
+      </tr>
+      <tr>
+        <th>License Plate:</th>
+        <td><%= vehicle.license_plate %></td>
+      </tr>
+      <tr>
+        <th>Garaged Address:</th>
+        <td><%= vehicle.garaged_location %></td>
+      </tr>
+    <% end %>
+
+  </table>
+</div>
+
+<%= render :partial => 'footer' %>

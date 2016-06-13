@@ -1,1 +1,10 @@
-<%= render :partial=>"form" %>
+<div id="page-header" class="clearfix">
+  <h1>New Run</h1>
+</div>
+
+<%= form_for @run do |f| %>
+  <%= render "form", :f => f %>
+  <div class="actions">
+    <%= f.submit %>
+  </div>
+<% end %>

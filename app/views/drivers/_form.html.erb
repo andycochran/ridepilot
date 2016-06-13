@@ -27,6 +27,11 @@
         <%= f.label :paid %>
         <%= f.select :paid, [["Paid", "true"], ["Volunteer", "false"]], {:selected => @driver.paid.to_s} %>
       </li>
+      
+      <li>
+        <%= f.label :user_id, "Associated User" %>
+        <%= f.collection_select :user_id, @available_users, :id, :email, :include_blank => true %>
+      </li>
     </ol>
 
     <div class="actions">

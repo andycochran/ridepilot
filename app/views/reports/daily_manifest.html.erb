@@ -1,23 +1,21 @@
-<h1>Transportation Schedule</h1>
-<h2><%= @date %></h2>
-
+<% content_for(:title){"Manifest #{@date.strftime('%v')}"} %>
 <% i = 0 %>
 <% for driver, trips in @trips %>
   <% i += 1 %>
 
-  Driver: <%= driver.name %>
-
-  <% for trip in trips %>
-    <strong><%= trip.pickup_time %></strong><br/>
-    <%= trip.customer.name %> <br/>
-    <%= trip.customer.phone_number_1 %> <br/>
-    <%= trip.customer.phone_number_2 %> <br/>
-    <%= trip.pickup_address.text %> <br/>
-    <%= trip.dropoff_address.text %> <br/>
-    <hr>
+  <h1>Transportation Manifest</h1>
+  <h2><%= format_date_for_daily_manifest @date %> &mdash; <%= driver.present? ? driver.name : 'Unspecified driver' %></h2>
+  
+  <% if @cab_trips %>
+    <div class="cab-summary">
+      <h2>Cab Trips</h2>
+      <%= render 'manifest_trips', :trips => @cab_trips %>
+    </div>
   <% end %>
 
+  <%= render 'manifest_trips', :trips => trips %>
+
   <% if i != @trips.size %>
-    <p style="page-break-after:always" />
+    <br style="page-break-after:always" /> 
   <% end %>
 <% end %>

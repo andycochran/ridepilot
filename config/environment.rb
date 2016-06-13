@@ -1,19 +1,24 @@
-# Load the rails application
+# Load the Rails application.
 require File.expand_path('../application', __FILE__)
 
 TRIP_RESULT_CODES = {
-  "unscheduled" => "Unscheduled",
-  "COMP" => "Completed", # the trip was (as far as we know) completed
-  "CANC" => "Cancelled", # the trip was cancelled by the customer
-  "NS" => "No Show", # the customer did not show up for the trip
-  "TD" => "Turndown", # the provider told the customer that it could not provide the trip
-  "UNMET" => "Unmet Need" #a trip that was outside of the service parameters (too early, too late, too far, etc).
+  "COMP"  => "Complete",    # the trip was (as far as we know) completed
+  "NS"    => "No-show",     # the customer did not show up for the trip
+  "CANC"  => "Cancelled",   # the trip was cancelled by the customer
+  "TD"    => "Turned down", # the provider told the customer that it could not provide the trip
+  "UNMET" => "Unmet Need"   # a trip that was outside of the service parameters (too early, too late, too far, etc).
 }
 
-TRIP_PURPOSES = ["Life-Sustaining Medical", "Medical", "Nutrition", "Personal/Support Services", "Recreation", "Shopping", "School/Work", "Volunteer Work"]
+TRIP_PURPOSES = ["Life-Sustaining Medical", "Medical", "Nutrition", "Personal/Support Services", "Recreation", "School/Work", "Shopping", "Volunteer Work", "Center"]
 
-DEFAULT_RUN_START_HOUR = 7
-DEFAULT_RUN_END_HOUR = 18
+SERVICE_LEVELS = ["Wheelchair", "Ambulatory"]
+
+TRIP_VERIFICATION_DISPLAY_OPTIONS = ['All Trips','Cab Trips','Not Cab Trips']
+
+BUSINESS_HOURS = {
+  :start => 7,
+  :end => 18,
+}
 
 PER_PAGE = 30
 
@@ -79,7 +84,7 @@ STATE_NAME_TO_POSTAL_ABBREVIATION = {
   "WYOMING" => "WY"
 }
 
-EMAIL_FROM = "apps@rideconnection.com"
+EMAIL_FROM = "apps@rideconnection.org"
 
-# Initialize the rails application
-Ridepilot::Application.initialize!
+# Initialize the Rails application.
+Rails.application.initialize!

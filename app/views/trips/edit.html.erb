@@ -1,14 +1,14 @@
-<div id="page-header">
+<div id="page-header" class="clearfix">
   <h1>Editing Trip</h1>
+  <%= render :partial => 'weekday_select' %>
+  <div class="clearfix"></div>
 </div>
 
-<%= link_to 'Cancel', @trip, :class=>'cancel' %>
+<div id="calendar" data-start-time="<%= @week_start.to_i * 1000 %>"></div>
+
+<%= render 'list', :display => "none" %>
 
 <%= render 'form' %>
-
-<hr />
-
-<%= link_to 'Back to View Trips', trips_path, :class=>'action-bttn' %>
 
 <%= render 'javascript' %>
 

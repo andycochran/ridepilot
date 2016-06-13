@@ -1,4 +1,4 @@
-<div id="page-header">
+<div id="page-header" class="clearfix">
   <h1>Vehicle Details</h1>
 </div>
 
@@ -23,8 +23,8 @@
 
   <dt>Model:</dt>
   <dd><%= @vehicle.model %></dd>
-
 </dl>
+
 <dl>
   <dt>License plate:</dt>
   <dd><%= @vehicle.license_plate %></dd>
@@ -34,6 +34,9 @@
 
   <dt>Garaged:</dt>
   <dd><%= @vehicle.garaged_location %></dd>
+
+  <dt>Show vehicle on vehicle report:</dt>
+  <dd><%= @vehicle.reportable ? 'Yes' : 'No' %></dd>
 </dl>
 
 </div>

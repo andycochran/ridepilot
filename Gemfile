@@ -1,58 +1,87 @@
-source 'http://rubygems.org'
+source 'https://rubygems.org'
 
-gem 'rails', '3.0.3'
+ruby '2.2.1'
 
-# Bundle edge Rails instead:
-# gem 'rails', :git => 'git://github.com/rails/rails.git'
+gem 'rails', '~> 4.1.0'
 
-gem 'sqlite3-ruby', :require => 'sqlite3'
+# Use SCSS for stylesheets
+gem 'sass-rails', '~> 4.0.3'
 
-gem "cancan"
+# Use Uglifier as compressor for JavaScript assets
+gem 'uglifier', '>= 1.3.0'
 
-gem "devise"
+# Use CoffeeScript for .js.coffee assets and views
+gem 'coffee-rails', '~> 4.0.0'
 
-gem "pg"
+# See https://github.com/sstephenson/execjs#readme for more supported runtimes
+gem 'therubyracer',  platforms: :ruby
 
-gem "GeoRuby"
+# Use jquery as the JavaScript library
+gem 'jquery-rails'
 
-gem "spatial_adapter"
+# Turbolinks makes following links in your web application faster. Read more: https://github.com/rails/turbolinks
+# gem 'turbolinks'
 
-gem 'jquery-rails', '>= 0.2.6'
+# Build JSON APIs with ease. Read more: https://github.com/rails/jbuilder
+# gem 'jbuilder', '~> 2.0'
 
-gem "rails3-jquery-autocomplete"
+# bundle exec rake doc:rails generates the API under doc/api.
+gem 'sdoc', '~> 0.4.0', group: :doc
 
-gem "schedule_atts", :git => "git://github.com/zpearce/Schedule-Attributes.git"
+gem 'pg'
+gem 'cancancan', '~> 1.10.1'
+gem 'devise', '~> 3.4.1'
 
-gem "whenever", :git => "https://github.com/javan/whenever.git"
+# RADAR v3.x will support ActiveRecord 4.2
+gem 'activerecord-postgis-adapter', '~> 2.2.1'
 
-gem "validates_timeliness"
+gem 'whenever', '~> 0.9.4', :require => false
 
-gem "paperclip"
+# RADAR current version is 0.12.1, but current recurring trip tracking relies 
+# on 0.6.8
+gem 'ice_cube', '0.6.8' 
 
-gem "will_paginate"
+# Fork with Rails 4.x compatibility
+gem 'jc-validates_timeliness', '~> 3.1.1'
 
-gem "attribute_normalizer"
+gem 'paperclip', '~> 4.2.1'
+gem 'will_paginate', '~> 3.0.7'
+gem 'attribute_normalizer', '~> 1.2.0'
 
+# For change tracking and auditing
+gem 'paper_trail', '~> 3.0.6'
 
-# Use unicorn as the web server
-# gem 'unicorn'
+gem 'rails-jquery-autocomplete', '~> 1.0.0'
 
-# Deploy with Capistrano
-gem 'capistrano'
+# RADAR Not updated since 2011
+gem 'schedule_atts', :git => 'git://github.com/zpearce/Schedule-Attributes.git'
 
-# To use debugger (ruby-debug for Ruby 1.8.7+, ruby-debug19 for Ruby 1.9.2+)
-# gem 'ruby-debug'
-# gem 'ruby-debug19'
+group :development do
+  # Spring speeds up development by keeping your application running in the background. Read more: https://github.com/rails/spring
+  gem 'spring'
+  gem "spring-commands-rspec"
+  
+  # Use Capistrano for deployment
+  gem 'capistrano', '~> 3.4'
+  gem 'capistrano-rvm', '~> 0.1', require: false
+  gem 'capistrano-rails', '~> 1.1', require: false
+  gem 'capistrano-secrets-yml', '~> 1.0', require: false
+end
 
-# Bundle the extra gems:
-# gem 'bj'
-# gem 'nokogiri'
-# gem 'sqlite3-ruby', :require => 'sqlite3'
-# gem 'aws-s3', :require => 'aws/s3'
+group :production do
+  gem 'exception_notification', '~> 4.0'
+end
 
-# Bundle gems for the local environment. Make sure to
-# put test-only gems in this group so their generators
-# and rake tasks are available in development mode:
-# group :development, :test do
-#   gem 'webrat'
-# end
+group :test, :development do
+  gem 'byebug'
+
+  gem 'rspec-rails', '~> 3.2'
+  
+  gem 'capybara', '~> 2.4'
+
+  gem 'factory_girl_rails', '~> 4.5'
+  
+  gem 'database_cleaner', '~> 1.4'
+
+  gem 'faker', '~> 1.4'
+end

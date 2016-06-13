@@ -3,22 +3,47 @@
 #
 # Examples:
 #
-#   cities = City.create([{ :name => 'Chicago' }, { :name => 'Copenhagen' }])
-#   Mayor.create(:name => 'Daley', :city => cities.first)
+#   cities = City.create([{ name: 'Chicago' }, { name: 'Copenhagen' }])
+#   Mayor.create(name: 'Emanuel', city: cities.first)
 
-if !Provider.exists?(1)
-  provider = Provider.new(:id=>1, :name=>'Ride Connection')
-  provider.logo = File.open(File.join(RAILS_ROOT, "public", "ride_connection_logo.png"))
-  provider.save!
-end
-f = File.new(File.join(RAILS_ROOT, 'db', 'trimet.wkt')) 
-wkt = f.read
-f.close
-poly = Polygon.from_ewkt(wkt)
-poly.srid = 4326
-region = Region.create(:name=>"TriMet", :the_geom => poly)
+ActiveRecord::Base.transaction do
+  puts "Seeding..."
 
+  unless Provider.ride_connection.present?
+    puts "Creating first Provider..."
+    provider = Provider.new(:name => 'Ride Connection', :dispatch => true)
+    provider.logo = File.open(Rails.root.join("public", "ride_connection_logo.png"))
+    provider.save!
+  
+    puts "Creating first User..."
+    password = "password 1"
+    user = User.create!(
+      :email => "admin@rideconnection.org",
+      :password => password,
+      :password_confirmation => password,
+      :current_provider => provider
+    )
+  
+    puts "Setting first user up as a super admin..."
+    Role.create!(
+      :user => user,
+      :provider => provider, 
+      :level => 100
+    )
+  end
 
-for name in ["Scooter", "Wheelchair", "Wheelchair - Oversized", "Wheelchair - Can Transfer", "Unknown", "Ambulatory"]
-  Mobility.create(:name=>name)
+  Region.find_or_create_by!(:name => "TriMet") do |region|
+    puts "Creating TriMet Region..."
+    f = File.new(Rails.root.join('db', 'trimet.wkt'))
+    wkt = f.read
+    f.close
+    region.the_geom = RGeo::Geos.factory(srid: 4326).parse_wkt(wkt)
+  end
+
+  puts "Creating initial mobilities..."
+  ["Scooter", "Wheelchair", "Wheelchair - Oversized", "Wheelchair - Can Transfer", "Unknown", "Ambulatory"].each do |name|
+    Mobility.find_or_create_by!(:name => name)
+  end
+
+  puts "Done seeding"
 end

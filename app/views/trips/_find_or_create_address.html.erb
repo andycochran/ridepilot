@@ -1,48 +1,56 @@
-<%= form_tag addresses_path, :class=>'address-search', :method=>:post, :remote=>true, 'data-id-element' => "#trip_#{prefix}_address_id", 'data-label-element' => "##{prefix}_address_label" do %> 
-  <label for="customer_id">Search:</label>
-  <%= autocomplete_field_tag "#{prefix}_search_address", '', autocomplete_addresses_path, :size => 30, :id_element => "##{prefix}_address_id", :select_func => "#{prefix}_autocompleted"  %>
-  <%= hidden_field_tag "#{prefix}_address_id" %>
+<%= form_tag addresses_path, :class=>'address-search', :method=>:post, :remote=>true, 'data-id-element' => "#trip_#{prefix}_address_id", 'data-label-element' => "##{prefix}_search_address" do %> 
+  <%= hidden_field_tag 'address_id', address.id %>
   <%= hidden_field_tag 'prefix', prefix %>
   <%= hidden_field_tag 'lat' %>
   <%= hidden_field_tag 'lon' %>
-
-  <ul>
+  <fieldset>
+  <ol class="section">
   <li class="selfclear">
     <%= label_tag "#{prefix}_name", "Address Name:" %>
-    <%= text_field_tag "#{prefix}_name" %>
+    <%= text_field_tag "#{prefix}_name", address.name %>
   </li>
 
   <li class="selfclear">
     <%= label_tag "#{prefix}_building_name", "Building Name:" %>
-    <%= text_field_tag "#{prefix}_building_name" %>
+    <%= text_field_tag "#{prefix}_building_name", address.building_name %>
   </li>
 
   <li class="selfclear">
     <%= label_tag "#{prefix}_address", "Address:" %>
-    <%= text_field_tag "#{prefix}_address" %>
+    <%= text_field_tag "#{prefix}_address", address.address %>
   </li>
 
   <li class="selfclear">
     <%= label_tag "#{prefix}_city", "City:" %>
-    <%= text_field_tag "#{prefix}_city" %>
+    <%= text_field_tag "#{prefix}_city", address.city %>
   </li>
 
   <li class="selfclear">
     <%= label_tag "#{prefix}_state", "State:" %>
-    <%= text_field_tag "#{prefix}_state", '', :size=>2 %>
+    <%= text_field_tag "#{prefix}_state", address.state, :size=>2 %>
   </li>
 
   <li class="selfclear">
     <%= label_tag "#{prefix}_zip", "ZIP:" %>
-    <%= text_field_tag "#{prefix}_zip" %>
+    <%= text_field_tag "#{prefix}_zip", address.zip %>
+  </li>
+  
+  <li class="selfclear">
+    <%= label_tag "#{prefix}_phone_number", "Phone Number:" %>
+    <%= text_field_tag "#{prefix}_phone_number", address.phone_number %>
+  </li>
+  
+  <li class="selfclear">
+    <%= label_tag "#{prefix}_default_trip_purpose", "Default Trip Purpose:" %>
+    <%= select_tag "#{prefix}_default_trip_purpose", options_for_select(TRIP_PURPOSES, address.default_trip_purpose), :include_blank => true %>
   </li>
 
   <li class="selfclear">
     <%= label_tag "#{prefix}_in_district", "In TriMet District:" %>
-    <%= select_tag "#{prefix}_in_district", options_for_select([["Yes", "true"], ["No", "false"]]) %>
+    <%= select_tag "#{prefix}_in_district", options_for_select([["Yes", "true"], ["No", "false"]], address.in_district ? "true" : "false") %>
   </li>
-  </ul>
-
+  </ol>
+  </fieldset>
 <% end %>
 
 
