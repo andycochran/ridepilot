@@ -2,24 +2,24 @@ class Customer < ActiveRecord::Base
   belongs_to :provider
   belongs_to :address
   belongs_to :mobility
-  belongs_to :created_by, :foreign_key => :created_by_id, :class_name=>'User'
-  belongs_to :updated_by, :foreign_key => :updated_by_id, :class_name=>'User'
-  has_many   :trips
+  belongs_to :default_funding_source, :class_name=>'FundingSource'
+  has_many   :trips, :dependent => :destroy
 
+  validates_presence_of :first_name
+  validates_associated :address
   accepts_nested_attributes_for :address
 
   normalize_attribute :first_name, :with=> [:squish, :titleize]
   normalize_attribute :last_name, :with=> [:squish, :titleize]
   normalize_attribute :middle_initial, :with=> [:squish, :upcase]
 
-  default_scope :order => 'last_name, first_name, middle_initial'
+  default_scope { order('last_name, first_name, middle_initial') }
   
-  scope :by_letter, lambda { |letter| where("lower(last_name) LIKE ?", "#{letter.downcase}%") }
-  scope :for_provider, lambda { |provider_id| where( :provider_id => provider_id ) }
-  scope :individual, where(:group => false)
-  scope :group, where(:grop => true)
+  scope :by_letter,    -> (letter) { where("lower(last_name) LIKE ?", "#{letter.downcase}%") }
+  scope :for_provider, -> (provider_id) { where( :provider_id => provider_id ) }
+  scope :individual,   -> { where(:group => false) }
 
-  stampable :creator_attribute => :created_by_id, :updater_attribute => :updated_by_id
+  has_paper_trail
 
   def name
     if group
@@ -44,32 +44,42 @@ class Customer < ActiveRecord::Base
   
   def as_autocomplete
     if address.present?
-      address_text = address.text 
-      address_id = address.id 
+      address_text = address.text.gsub(/\s+/, ' ')
+      address_id = address.id
+      address_data = address.attributes
+      address_data[:label] = address_text
     end
 
-    { :label           => name, 
-      :id              => id,
-      :phone_number_1  => phone_number_1, 
-      :phone_number_2  => phone_number_2,
-      :mobility_notes  => mobility_notes,
-      :mobility_id     => mobility_id,
-      :address         => address_text,
-      :address_id      => address_id,
-      :private_notes   => private_notes,
-      :group           => group
+    { :label                     => name, 
+      :id                        => id,
+      :phone_number_1            => phone_number_1, 
+      :phone_number_2            => phone_number_2,
+      :mobility_notes            => mobility_notes,
+      :mobility_id               => mobility_id,
+      :address                   => address_text,
+      :address_id                => address_id,
+      :private_notes             => private_notes,
+      :group                     => group,
+      :address_data              => address_data,
+      :default_funding_source_id => default_funding_source_id,
+      :default_service_level     => default_service_level
     }
   end
   
   def replace_with!(other_customer_id)
-    return false unless other_customer_id.present? && self.class.exists?(other_customer_id)
-    
-    self.trips.each do |trip|
-      trip.update_attribute :customer_id, other_customer_id
+    if other_customer_id.present? && self.class.exists?(other_customer_id.to_i) && id != other_customer_id.to_i
+      self.trips.each do |trip|
+        trip.update_attribute :customer_id, other_customer_id
+      end
+      
+      # reload the trips array so we don't destroy the still-attached dependents
+      self.trips(true)
+      
+      self.destroy
+      self.class.find other_customer_id
+    else
+      false
     end
-    
-    self.destroy
-    self.class.find other_customer_id
   end
   
   def self.by_term( term, limit = nil )

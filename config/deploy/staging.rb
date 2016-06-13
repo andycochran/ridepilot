@@ -1,6 +1,13 @@
-set :deploy_to, "/home/deployer/rails/ridepilot-staging"
-set :branch, "master"
-set :rvm_ruby_string, '1.9.2'
-role :web, "184.154.79.122"
-role :app, "184.154.79.122"
-role :db,  "184.154.79.122", :primary => true # This is where Rails migrations will run
+set :branch, 'master'
+set :rvm_ruby_version, '2.2.1@ridepilot'
+set :passenger_rvm_ruby_version, '2.2.2@passenger'
+set :deploy_to, '/home/deploy/rails/ridepilot'
+set :default_env, { "RAILS_RELATIVE_URL_ROOT" => "/ridepilot" }
+
+# capistrano-rails directives
+set :rails_env, 'staging'
+set :assets_roles, [:web, :app]
+set :migration_role, [:db]
+set :conditionally_migrate, true
+
+server 'staging.rideconnection.org', roles: [:app, :web, :db], user: 'deploy'

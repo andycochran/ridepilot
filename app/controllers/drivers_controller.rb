@@ -1,12 +1,13 @@
 class DriversController < ApplicationController
   load_and_authorize_resource
 
-  def new
-    prep_edit
-  end
-
   def index
     redirect_to provider_path(current_provider)
+  end
+
+  def new
+    @driver.provider = current_provider
+    prep_edit
   end
 
   def edit
@@ -14,10 +15,9 @@ class DriversController < ApplicationController
   end
 
   def update
-    @driver.update_attributes(params[:driver])
-    if @driver.save
+    if @driver.update_attributes(driver_params)
       flash[:notice] = "Driver updated"
-      redirect_to provider_path(current_user.current_provider)
+      redirect_to provider_path(current_provider)
     else
       prep_edit
       render :action=>:edit
@@ -45,5 +45,9 @@ class DriversController < ApplicationController
   def prep_edit
     @available_users = @driver.provider.users - User.drivers(@driver.provider)
     @available_users << @driver.user if @driver.user
+  end
+  
+  def driver_params
+    params.require(:driver).permit(:active, :paid, :name, :user_id)
   end
 end
