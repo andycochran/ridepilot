@@ -1,55 +1,125 @@
+# RidePilot
+
 RidePilot is a paratransit trip scheduling application. 
 
-RidePilot is a project of Ride Connection, a Portland-area community
-transpotation provider.  It is primarily written by hackers at
-OpenPlans.
+RidePilot is a project of Ride Connection, a Portland-area community transportation provider. It is primarily written by hackers at OpenPlans.
 
------------------------
+## Dependencies (as of 2015-02-05)
 
-To set up postgres for use with RidePilot, you will need the
-fuzzystrmatch library (included in postgresql-contrib-8.4 in Ubuntu),
-and postgis.  This adds support for dmetaphone, which is how we
-phonetically match names.  Run psql and then the following commands:
+* Postgresql 9.3
+* PostGIS 2.1
+* Ruby 2.1.4
+* Rails 4.2
+* Imagemagick
 
--- Create a new database
-CREATE DATABASE template_postgis;
+## Setting up a development environment
 
--- Make it a template database
-UPDATE pg_database SET datistemplate = TRUE WHERE datname = 'template_postgis';
+Because of the complexity involved with managing multiple versions of the same database, I have found the cleanest way to setup a development environment is to use Vagrant, Chef and VirtualBox for the database, and RVM for local Ruby and Gem management. This gives you an isolated environment that is easy to provision. If you don't want to go that route, you can setup all of the database dependencies yourself on your local machine. YMMV with either approach.
 
--- Connect to new database and install the pl/pgsql language
-\c template_postgis
+### Provisioning a Database VM with Vagrant
 
-CREATE LANGUAGE plpgsql;
+Using this method, you will set your Rails app to connect to your VM's database server. All of your development, testing, and other console commands can be run locally on the host.
 
--- Install PostGIS (your file paths may vary)
-\i /opt/local/share/postgresql84/contrib/postgis-1.5/postgis.sql 
-\i /opt/local/share/postgresql84/contrib/postgis-1.5/spatial_ref_sys.sql
-GRANT ALL ON geometry_columns TO PUBLIC;
-GRANT ALL ON geography_columns TO PUBLIC;
-GRANT ALL ON spatial_ref_sys TO PUBLIC;
+1. Follow the "Using Vagrant for Database Management in Development" document in the Rideconnection Recipes repo.
+    
+2. Continue to "Common Setup Steps"
 
--- vacuum freeze: it will guarantee that all rows in the database are
--- "frozen" and will not be subject to transaction ID wraparound
--- problems.
-VACUUM FREEZE;
+### Provisioning Locally (without Vagrant)
 
+1. Install the required versions of Postgresql, PostGIS, and any other system packages required for your setup
 
--- You'll also want to set up the fuzzy string matching functions
+2. To set up PostgreSQL for use with RidePilot, you will need the `fuzzystrmatch` library (included in the postgresql-contrib library in Ubuntu), and `postgis`. This adds support for `dmetaphone`, which is how we phonetically match names. Run `psql` and then the following commands:
 
-\i /opt/local/share/postgresql84/contrib/fuzzystrmatch.sql 
+        -- Create a new database
+        CREATE DATABASE template_postgis;
 
------------------------
+        -- Make it a template database
+        UPDATE pg_database SET datistemplate = TRUE WHERE datname = 'template_postgis';
 
-make sure your database.yml contains the line:
+        -- Connect to new database and install the pl/pgsql language
+        \c template_postgis
 
-  template: template_postgis
+        CREATE LANGUAGE plpgsql;
 
-in the section named common: &common
+        -- Install PostGIS (your file paths may vary)
+        \i /opt/local/share/postgresql93/contrib/postgis-2.1/postgis.sql 
+        \i /opt/local/share/postgresql93/contrib/postgis-2.1/spatial_ref_sys.sql
+        GRANT ALL ON geometry_columns TO PUBLIC;
+        GRANT ALL ON geography_columns TO PUBLIC;
+        GRANT ALL ON spatial_ref_sys TO PUBLIC;
 
-Then do rake db:create
+        -- vacuum freeze: it will guarantee that all rows in the database are
+        -- "frozen" and will not be subject to transaction ID wraparound
+        -- problems.
+        VACUUM FREEZE;
 
------------------------
+        -- You'll also want to set up the fuzzy string matching functions
+        \i /opt/local/share/postgresql93/contrib/fuzzystrmatch.sql 
 
-You will also need ImageMagick (for no good reason, but Paperclip,
-which we use for attachments, requires it)
+3. Create the database user and development and test databases per the database config
+
+4. Continue to "Common Setup Steps"
+    
+### Common Setup Steps
+
+1. Install RVM
+
+2. Install any additional libraries reported by `rvm requirements`
+
+3. Install the required version of Ruby:
+
+        rvm list known
+        rvm install ruby-xxx.xxx
+
+4. Install bundler
+
+        rvm gemset use ruby-xxx.xxx@global
+        gem install bundler
+    
+5. `cd` into (or out and back into) the project directory to pickup the RVM configuration files. Follow any instructions for creating the gemset.
+
+6. Install the gem bundle. In the project dir, run:
+
+        bundle install
+
+7. Make sure your `config/database.yml` contains the line in the section named `common: &common`:
+
+        template: template_postgis
+
+8. Copy `config/app_config_template.yml` to `config/app_config.yml`. You can leave it as-is in most cases.
+
+9. Setup the database:
+        
+        bin/rake db:setup
+        
+   Among other things, this will seed the database with some initial data. You can immediately log in using the email address "admin@rideconnection.org" and the password "password 1". *Be sure to change the initial password if this is a production server.*
+
+10. Make sure you can start the app without error
+
+        bin/rails server
+    
+   Then make sure you can browse the website at `http://localhost:3000` without error
+
+11. Make sure all of the automated tests pass
+    
+        bin/rake db:test:prepare
+        bin/rake test
+        bin/rake spec
+
+## Deployment
+
+This application uses capistrano for deployment. Check out `config/deploy.rb` and `config/deploy/*` for basic deployment recipes and configuration.
+
+Deployment uses key-based authentication. To deploy, you'll need to add your public key on the staging/production servers so you can run commands as the "deployer" user.
+
+To set this up, talk to another developer to get your public key on the machines. If you need to do system administration on the servers, you'll need your own user account set up as well.
+
+Once you have SSH access as deployer, you can deploy:
+
+    cap [staging|production] deploy
+
+Remember to push your changes to the main repository first, since the deploy process pulls from there. Database migrations are currently performed by hand after deploying.
+
+### Deployment Gotchas
+
+(TODO verify this is true) Ridepilot staging is on the production server. That means when you go into rails/ridepilot-staging, you actually have to set `RAILS_ENV=production` if you're going to run any commands. It will not affect the real production app if you're in the right directory.

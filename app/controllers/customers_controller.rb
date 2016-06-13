@@ -17,7 +17,8 @@ class CustomersController < ApplicationController
     end
   end
 
-  def index #only active customers
+  def index
+    # only active customers
     @show_inactivated_date = false
     @customers = @customers.for_provider(current_provider_id).where(:inactivated_date => nil)
     @customers = @customers.by_letter(params[:letter]) if params[:letter].present?
@@ -28,35 +29,26 @@ class CustomersController < ApplicationController
     end
   end
   
-  def search
-    @customers = Customer.for_provider(current_provider_id).by_term( params[:term].downcase ).
-      accessible_by( current_ability ).
-      paginate( :page => params[:page], :per_page => PER_PAGE )
-      
-    render :action => :index
-  end
-
-  def search
-    @customers = Customer.for_provider(current_provider_id).by_term( params[:term].downcase ).
-      accessible_by( current_ability ).
-      paginate( :page => params[:page], :per_page => PER_PAGE )
-
-    render :action => :index
-  end
-
   def all
     @show_inactivated_date = true
     @customers = Customer.for_provider(current_provider_id).accessible_by(current_ability)
     @customers = @customers.paginate :page => params[:page], :per_page => PER_PAGE
-    render :action=>"index"
+    render :action => :index
   end
 
+  def search
+    @customers = Customer.for_provider(current_provider_id).by_term(params[:term].downcase).
+      accessible_by(current_ability).
+      paginate(:page => params[:page], :per_page => PER_PAGE)
+      
+    render :action => :index
+  end
 
   def show
     @customer = Customer.find(params[:id])
 
     # default scope is pickup time ascending, so reverse
-    @trips    = @customer.trips.order(:pickup_time).reverse.paginate :page => params[:page], :per_page => PER_PAGE
+    @trips    = @customer.trips.reorder('pickup_time desc').paginate :page => params[:page], :per_page => PER_PAGE
 
     respond_to do |format|
       format.html # show.html.erb
@@ -67,8 +59,7 @@ class CustomersController < ApplicationController
   def new
     @customer = Customer.new name_options
     @customer.address ||= @customer.build_address :provider => current_provider
-    @mobilities = Mobility.all
-    @ethnicities = ETHNICITIES
+    prep_edit
 
     respond_to do |format|
       format.html # new.html.erb
@@ -78,13 +69,11 @@ class CustomersController < ApplicationController
 
   def edit
     @customer = Customer.find(params[:id])
-    @mobilities = Mobility.all
-    @ethnicities = ETHNICITIES
+    prep_edit
   end
 
   def create
-
-    @customer = Customer.new(params[:customer])
+    @customer = Customer.new customer_params
     @customer.provider = current_provider
     @customer.activated_date = Date.today
 
@@ -118,8 +107,7 @@ first_name, first_name, first_name, first_name,
         dup = dup_customers[0]
         flash[:alert] = "There is already a customer with a similar name or the same email address: <a href=\"#{url_for :action=>:show, :id=>dup.id}\">#{dup.name}</a> (dob #{dup.birth_date}).  If this is truly a different customer, check the 'ignore duplicates' box to continue creating this customer.".html_safe
         @dup = true
-        @mobilities = Mobility.all
-        @ethnicities = ETHNICITIES
+        prep_edit
         return render :action=>"new"
       end
     end
@@ -129,8 +117,7 @@ first_name, first_name, first_name, first_name,
         format.html { redirect_to(@customer, :notice => 'Customer was successfully created.') }
         format.xml  { render :xml => @customer, :status => :created, :location => @customer }
       else
-        @mobilities  = Mobility.all
-        @ethnicities = ETHNICITIES
+        prep_edit
         format.html { render :action => "new" }
         format.xml  { render :xml => @customer.errors, :status => :unprocessable_entity }
       end
@@ -144,14 +131,14 @@ first_name, first_name, first_name, first_name,
     @customer.inactivated_date = Date.today
     @customer.inactivated_reason = params[:customer][:inactivated_reason]
     @customer.save
-    redirect_to :action=>:index
+    redirect_to :action => :index
   end
 
   def update
     @customer = Customer.find(params[:id])
-
+    
     respond_to do |format|
-      if @customer.update_attributes(params[:customer])
+      if @customer.update_attributes customer_params
         format.html { redirect_to(@customer, :notice => 'Customer was successfully updated.') }
         format.xml  { head :ok }
       else
@@ -175,6 +162,39 @@ first_name, first_name, first_name, first_name,
   end
   
   private
+  
+  def customer_params
+    params.require(:customer).permit(
+      :ada_eligible,
+      :birth_date,
+      :default_funding_source_id,
+      :default_service_level,
+      :email,
+      :emergency_contact_notes,
+      :ethnicity,
+      :first_name,
+      :group,
+      :last_name,
+      :medicaid_eligible,
+      :middle_initial,
+      :mobility_id,
+      :mobility_notes,
+      :phone_number_1,
+      :phone_number_2,
+      :prime_number,
+      :private_notes,
+      :public_notes,
+      :address_attributes => [
+        :address,
+        :building_name,
+        :city,
+        :name,
+        :provider_id,
+        :state,
+        :zip,
+      ],
+    )
+  end
 
   def name_options
     if params[:customer_name]
@@ -192,5 +212,11 @@ first_name, first_name, first_name, first_name,
       atts
     end || {}
   end
-
+  
+  def prep_edit
+    @mobilities = Mobility.all
+    @ethnicity_names = (current_provider.ethnicities.collect(&:name) + [@customer.ethnicity]).compact.sort.uniq
+    @funding_sources = FundingSource.by_provider(current_provider)
+    @service_levels = SERVICE_LEVELS
+  end
 end

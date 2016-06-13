@@ -1,16 +1,16 @@
-require 'spec_helper'
+require "rails_helper"
 
-describe Address do
+RSpec.describe Address do
   describe "replace_with!" do
     context "when no address id" do
       attr_reader :address
       
       before do
-        @address = create_address
+        @address = create :address
       end
       
       it "is false" do
-        @address.replace_with!("").should_not be
+        expect(@address.replace_with!("")).not_to be
       end
     end
     
@@ -18,11 +18,11 @@ describe Address do
       attr_reader :address
       
       before do
-        @address = create_address
+        @address = create :address
       end
       
       it "is false" do
-        @address.replace_with!(-1).should_not be
+        expect(@address.replace_with!(-1)).not_to be
       end
     end
     
@@ -31,20 +31,20 @@ describe Address do
         attr_reader :address, :trips, :other
 
         before do
-          @address = create_address
-          @trips    = (1..5).map { create_trip :pickup_address => address }
-          @other    = create_address
+          @address = create :address
+          @trips    = (1..5).map { create :trip, :pickup_address => address }
+          @other    = create :address
           
           address.replace_with!(other.id)
         end
         
         it "destroys self" do
-          Address.exists?(address.id).should_not be
+          expect(Address.exists?(address.id)).not_to be
         end
 
         it "moves self's trips to other address" do
           for trip in trips
-            trip.reload.pickup_address.should == other
+            expect(trip.reload.pickup_address).to eq(other)
           end
         end
       end
@@ -56,20 +56,20 @@ describe Address do
         attr_reader :address, :trips, :other
 
         before do
-          @address = create_address
-          @trips    = (1..5).map { create_trip :dropoff_address => address }
-          @other    = create_address
+          @address = create :address
+          @trips    = (1..5).map { create :trip, :dropoff_address => address }
+          @other    = create :address
           
           address.replace_with!(other.id)
         end
         
         it "destroys self" do
-          Address.exists?(address.id).should_not be
+          expect(Address.exists?(address.id)).not_to be
         end
 
         it "moves self's trips to other address" do
           for trip in trips
-            trip.reload.dropoff_address.should == other
+            expect(trip.reload.dropoff_address).to eq(other)
           end
         end
       end

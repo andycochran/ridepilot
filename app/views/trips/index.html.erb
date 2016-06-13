@@ -1,5 +1,7 @@
-<div id="page-header">
+<div id="page-header" class="clearfix">
   <h1>View Trips</h1>
+  <%= render :partial => 'weekday_select' %>
+  <div class="clearfix"></div>
 </div>
 
 <div id="calendar" data-start-time="<%= @week_start.to_i * 1000 %>"></div>

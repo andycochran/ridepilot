@@ -1,4 +1,4 @@
-# Load the rails application
+# Load the Rails application.
 require File.expand_path('../application', __FILE__)
 
 TRIP_RESULT_CODES = {
@@ -9,12 +9,16 @@ TRIP_RESULT_CODES = {
   "UNMET" => "Unmet Need"   # a trip that was outside of the service parameters (too early, too late, too far, etc).
 }
 
-TRIP_PURPOSES = ["Life-Sustaining Medical", "Medical", "Nutrition", "Personal/Support Services", "Recreation", "Shopping", "School/Work", "Volunteer Work"]
+TRIP_PURPOSES = ["Life-Sustaining Medical", "Medical", "Nutrition", "Personal/Support Services", "Recreation", "School/Work", "Shopping", "Volunteer Work", "Center"]
+
+SERVICE_LEVELS = ["Wheelchair", "Ambulatory"]
 
 TRIP_VERIFICATION_DISPLAY_OPTIONS = ['All Trips','Cab Trips','Not Cab Trips']
 
-DEFAULT_RUN_START_HOUR = 7
-DEFAULT_RUN_END_HOUR = 18
+BUSINESS_HOURS = {
+  :start => 7,
+  :end => 18,
+}
 
 PER_PAGE = 30
 
@@ -80,9 +84,7 @@ STATE_NAME_TO_POSTAL_ABBREVIATION = {
   "WYOMING" => "WY"
 }
 
-ETHNICITIES = ['Caucasian','African American','Asian','Asian Indian','Chinese','Filipino','Hispanic','Japanese','Korean','Vietnamese','Pacific Islander','American Indian/Alaska Native','Native Hawaiian','Guamanian or Chamorrow','Samoan','Russian','Unknown','Refused','Other']
+EMAIL_FROM = "apps@rideconnection.org"
 
-EMAIL_FROM = "apps@rideconnection.com"
-
-# Initialize the rails application
-Ridepilot::Application.initialize!
+# Initialize the Rails application.
+Rails.application.initialize!
